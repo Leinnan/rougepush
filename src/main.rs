@@ -12,6 +12,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_systems(Startup, setup)
+        .insert_resource(ClearColor(Color::rgb(0.09, 0.09, 0.13)))
+        .insert_resource(Msaa::Off)
         .run();
 }
 
