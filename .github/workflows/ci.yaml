@@ -1,25 +1,25 @@
-name: CI
+name: build
 
 on:
+  workflow_call:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - 'main'
+      - 'master'
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Run cargo test
-  test:
-    name: Test Suite
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency: 
+      group: ${{ github.head_ref || github.run_id }}
+      cancel-in-progress: true
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Cache
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/
@@ -27,52 +27,25 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
-      - name: Run cargo test
-        run: cargo test
-
-  # Run cargo clippy -- -D warnings
-  clippy_check:
-    name: Clippy
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Cache
-        uses: actions/cache@v3
+          key: ${{ github.ref || github.run_id }}
+      - uses: actions-rs/toolchain@v1 # get rust toolchain for wasm
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.toml') }}
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+      - name: Rust Cache # cache the rust build artefacts
+        uses: Swatinem/rust-cache@v2
+      - name: Install wasm bindgen
+        uses: baptiste0928/cargo-install@v2
         with:
-          components: clippy
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
-
-  # Run cargo fmt --all -- --check
-  format:
-    name: Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+          crate: wasm-bindgen-cli
+      - name: Build
+        run: cargo build --release --target wasm32-unknown-unknown && wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_rouge.wasm  
+      - name: Copy
+        run: cp -R assets out/ && cp index.html out/index.html && ls -R out
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          components: rustfmt
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
+          folder: out
+          single-commit: true
