@@ -12,9 +12,10 @@ use bevy_sprite3d::Sprite3dPlugin;
 use bevy_third_person_camera::camera::*;
 use bevy_third_person_camera::*;
 
+mod board;
 mod consts;
 mod debug;
-mod world_gen;
+mod vectors;
 
 #[derive(Resource, AssetCollection)]
 struct ImageAssets {
@@ -49,11 +50,11 @@ fn main() {
             Sprite3dPlugin,
             ThirdPersonCameraPlugin,
             debug::DebugPlugin,
-            world_gen::WorldGenPlugin,
+            board::BoardPlugin,
         ))
         .add_systems(OnEnter(MyStates::Next), |mut commands: Commands| {
             commands.spawn(DelayedStart(Timer::new(
-                Duration::from_secs(2),
+                Duration::from_secs_f32(0.3),
                 TimerMode::Once,
             )));
         })
