@@ -8,6 +8,9 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams, Sprite3dPlugin};
 
+mod consts;
+mod debug;
+
 #[derive(Resource, AssetCollection)]
 struct ImageAssets {
     #[asset(path = "ducky.png")]
@@ -17,6 +20,10 @@ struct ImageAssets {
     #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 49, rows = 22,))]
     layout: Handle<TextureAtlasLayout>,
 }
+
+/// Tag entity to make it always face the camera
+#[derive(Component)]
+struct FaceCamera;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 enum MyStates {
@@ -30,18 +37,32 @@ fn main() {
     console_error_panic_hook::set_once();
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_plugins(Sprite3dPlugin)
+        .add_plugins((Sprite3dPlugin, debug::DebugPlugin))
         .add_systems(OnEnter(MyStates::Next), add_sprite)
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(Color::rgb(0.09, 0.09, 0.13)))
         .insert_resource(Msaa::Off)
         .init_state::<MyStates>()
+        .add_systems(Update, face_camera)
         .add_loading_state(
             LoadingState::new(MyStates::AssetLoading)
                 .continue_to_state(MyStates::Next)
                 .load_collection::<ImageAssets>(),
         )
         .run();
+}
+
+fn face_camera(
+    cam_query: Query<&Transform, With<Camera>>,
+    mut query: Query<&mut Transform, (With<FaceCamera>, Without<Camera>)>,
+) {
+    let cam_transform = cam_query.single();
+    for mut transform in query.iter_mut() {
+        let mut delta = cam_transform.translation - transform.translation;
+        delta.y = 0.0;
+        delta += transform.translation;
+        transform.look_at(delta, Vec3::Y);
+    }
 }
 
 fn setup(
@@ -74,20 +95,24 @@ fn setup(
 }
 
 fn add_sprite(mut commands: Commands, assets: Res<ImageAssets>, mut sprite_params: Sprite3dParams) {
-    commands.spawn(
-        Sprite3d {
-            image: assets.duck.clone(),
+    commands
+        .spawn(
+            Sprite3d {
+                image: assets.duck.clone(),
+                pixels_per_metre: 100.,
+                alpha_mode: AlphaMode::Blend,
+                transform: Transform::from_xyz(0., 1., 0.),
+                // pivot: Some(Vec2::new(0.5, 0.5)),
+                ..default()
+            }
+            .bundle(&mut sprite_params),
+        )
+        .insert(FaceCamera);
+}
 
-            pixels_per_metre: 150.,
-
-            alpha_mode: AlphaMode::Blend,
-
-            unlit: false,
-
-            transform: Transform::from_xyz(0., 0.5, 0.),
-            // pivot: Some(Vec2::new(0.5, 0.5)),
-            ..default()
-        }
-        .bundle(&mut sprite_params),
-    );
+fn generate_world(
+    mut commands: Commands,
+    images: Res<ImageAssets>,
+    mut sprite_params: Sprite3dParams,
+) {
 }
