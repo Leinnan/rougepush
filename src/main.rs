@@ -7,7 +7,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams, Sprite3dPlugin};
-use rand::{prelude::SliceRandom};
+use rand::prelude::SliceRandom;
 
 mod consts;
 mod debug;
@@ -98,6 +98,7 @@ fn generate_world(
     assets: Res<ImageAssets>,
     mut sprite_params: Sprite3dParams,
 ) {
+    info!("Start world generate");
     // random floor tile
     let options_f = [685, 734, 774, 775];
     let f = || *options_f.choose(&mut rand::thread_rng()).unwrap();
@@ -158,6 +159,7 @@ fn generate_world(
     // though since all the meshes and materials are already cached and reused,
     // I wonder how much of a speedup that'd actually be. Food for thought.
 
+    info!("World generate- floors");
     for y in 0..map.len() {
         for x in 0..map[y].len() {
             let index = map[y][x];
@@ -195,6 +197,7 @@ fn generate_world(
     // first horizontally, then vertically, scan along the map. If we find
     // a point transitioning from (0) to something else, add a wall there.
 
+    info!("World generate- walls");
     for y in 1..(map.len() - 1) {
         for x in 0..(map[y].len() - 1) {
             if (map[y][x] != (0)) ^ (map[y][x + 1] == (0)) {
@@ -264,4 +267,5 @@ fn generate_world(
             }
         }
     }
+    info!("World generate- completed");
 }
