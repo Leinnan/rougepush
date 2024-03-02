@@ -4,7 +4,9 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use bevy::prelude::*;
+use std::time::Duration;
+
+use bevy::{prelude::*};
 use bevy_asset_loader::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams, Sprite3dPlugin};
 use bevy_third_person_camera::camera::*;
@@ -34,13 +36,22 @@ enum MyStates {
     Next,
 }
 
+#[derive(Component)]
+struct DelayedStart(pub Timer);
+
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins((Sprite3dPlugin, ThirdPersonCameraPlugin, debug::DebugPlugin))
-        .add_systems(OnEnter(MyStates::Next), generate_world)
+        .add_systems(OnEnter(MyStates::Next), |mut commands: Commands| {
+            commands.spawn(DelayedStart(Timer::new(
+                Duration::from_secs(2),
+                TimerMode::Once,
+            )));
+        })
+        .add_systems(Update, generate_world.run_if(in_state(MyStates::Next)))
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
@@ -118,7 +129,17 @@ fn generate_world(
     mut commands: Commands,
     assets: Res<ImageAssets>,
     mut sprite_params: Sprite3dParams,
+    time: Res<Time>,
+    mut q: Query<(&mut DelayedStart, Entity)>,
 ) {
+    let Ok((mut timer, entity)) = q.get_single_mut() else {
+        return;
+    };
+    timer.0.tick(time.delta());
+    if !timer.0.finished() {
+        return;
+    }
+    commands.entity(entity).despawn();
     info!("Start world generate");
     // random floor tile
     let options_f = [685, 734, 774, 775];
