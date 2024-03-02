@@ -7,7 +7,10 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams, Sprite3dPlugin};
-use rand::prelude::SliceRandom;
+use bevy_third_person_camera::camera::*;
+use bevy_third_person_camera::controller::*; // optional if you want movement controls
+use bevy_third_person_camera::*;
+use rand::prelude::SliceRandom; // optional for additional camera settings
 
 mod consts;
 mod debug;
@@ -36,10 +39,10 @@ fn main() {
     console_error_panic_hook::set_once();
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_plugins((Sprite3dPlugin, debug::DebugPlugin))
+        .add_plugins((Sprite3dPlugin, ThirdPersonCameraPlugin, debug::DebugPlugin))
         .add_systems(OnEnter(MyStates::Next), generate_world)
         .add_systems(Startup, setup)
-        .insert_resource(ClearColor(Color::rgb(0.09, 0.09, 0.13)))
+        .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
         .init_state::<MyStates>()
         .add_systems(Update, face_camera)
@@ -87,10 +90,28 @@ fn setup(
         ..default()
     });
     // camera
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+    commands.spawn((
+        ThirdPersonCamera {
+            cursor_lock_key: KeyCode::Space,
+            cursor_lock_toggle_enabled: true,
+            gamepad_settings: CameraGamepadSettings::default(),
+            cursor_lock_active: true,
+            mouse_sensitivity: 1.0,
+            zoom_enabled: true,
+            zoom: Zoom::new(3.5, 5.0),
+            zoom_sensitivity: 1.0,
+            ..default()
+        },
+        FogSettings {
+            color: consts::BG_COLOR,
+            falloff: FogFalloff::ExponentialSquared { density: 0.11 },
+            ..default()
+        },
+        Camera3dBundle {
+            transform: Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
+    ));
 }
 
 fn generate_world(
@@ -191,6 +212,25 @@ fn generate_world(
                 .insert(Name::new(format!("{}x{}", x, y)));
         }
     }
+    let atlas_player = TextureAtlas {
+        layout: assets.layout.clone(),
+        index: 26,
+    };
+
+    // Player
+    commands.spawn((
+        Sprite3d {
+            image: assets.image.clone(),
+            pixels_per_metre: 16.,
+            double_sided: true,
+            transform: Transform::from_xyz(2.0, 0.5, 5.0),
+            ..default()
+        }
+        .bundle_with_atlas(&mut sprite_params, atlas_player),
+        ThirdPersonCameraTarget,
+        ThirdPersonController::default(), // optional if you want movement controls
+        Name::new("Player"),
+    ));
 
     // --------------------------- add some walls -------------------------
 
