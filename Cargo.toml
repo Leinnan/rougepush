@@ -23,6 +23,7 @@ bevy_asset_loader = {version="0.20", features=["2d"]}
 seldom_fn_plugin = "0.6"
 bevy_egui = "0.25.0"
 bevy-inspector-egui = "0.23.2"
+rand = "0.8"
 
 [dependencies.bevy]
 version = "0.13"
