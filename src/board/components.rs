@@ -10,6 +10,15 @@ pub enum TileType {
     Pit,
 }
 
+#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub enum Piece {
+    Player,
+    Enemy,
+}
+
+#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Deref, DerefMut)]
+pub struct PiecePos(pub Vector2Int);
+
 #[derive(Default, Resource, Reflect)]
 pub struct CurrentBoard {
     pub tiles: HashMap<Vector2Int, TileType>,

@@ -1,22 +1,25 @@
-use crate::{states, FaceCamera, ImageAssets};
+use crate::{states, vectors::Vector2Int, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
-use bevy_third_person_camera::controller::*;
-use components::{CurrentBoard, TileType};
+use components::*;
 use rand::prelude::SliceRandom; // optional if you want movement controls
 
 pub mod components;
 pub mod generator;
+pub mod renderer;
 
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TileType>()
+            .register_type::<Piece>()
+            .register_type::<PiecePos>()
             .add_systems(OnEnter(states::MainGameState::Game), generator::create_map)
             .add_systems(
                 Update,
-                (generate_world).run_if(in_state(states::MainGameState::Game)),
+                (generate_world, renderer::spawn_piece_renderer)
+                    .run_if(in_state(states::MainGameState::Game)),
             );
     }
 }
@@ -142,24 +145,6 @@ fn generate_world(
             }
         }
     }
-    let atlas_player = TextureAtlas {
-        layout: assets.layout.clone(),
-        index: 26,
-    };
 
-    // Player
-    commands.spawn((
-        Sprite3d {
-            image: assets.image_transparent.clone(),
-            pixels_per_metre: 16.,
-            double_sided: true,
-            transform: Transform::from_xyz(9.0, 0.5, 3.0),
-            ..default()
-        }
-        .bundle_with_atlas(&mut sprite_params, atlas_player),
-        bevy_third_person_camera::ThirdPersonCameraTarget,
-        ThirdPersonController::default(), // optional if you want movement controls
-        Name::new("Player"),
-        FaceCamera,
-    ));
+    commands.spawn((Piece::Player, PiecePos(Vector2Int::new(9, 3))));
 }

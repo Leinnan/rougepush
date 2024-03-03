@@ -15,7 +15,7 @@ pub struct DebugPlugin;
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         let args: Vec<String> = std::env::args().collect();
-        info!("{:?}", args);
+
         app.register_type::<RunArgs>()
             .insert_resource(RunArgs(args))
             .add_systems(Startup, git_info)
