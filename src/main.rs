@@ -11,6 +11,7 @@ use bevy_sprite3d::Sprite3dPlugin;
 use bevy_third_person_camera::camera::*;
 use bevy_third_person_camera::*;
 
+mod actions;
 mod board;
 mod consts;
 mod debug;
@@ -31,12 +32,8 @@ struct ImageAssets {
 #[derive(Component)]
 struct FaceCamera;
 
-#[derive(Resource, Reflect)]
-pub struct RunArgs(pub Vec<String>);
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    info!("{:?}", args);
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     App::new()
@@ -49,7 +46,6 @@ fn main() {
             states::GameStatesPlugin,
         ))
         .add_systems(Startup, setup)
-        .register_type::<RunArgs>()
         .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
         .add_systems(Update, face_camera)

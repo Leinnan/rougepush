@@ -19,6 +19,9 @@ pub enum Piece {
 #[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Deref, DerefMut)]
 pub struct PiecePos(pub Vector2Int);
 
+#[derive(Component, Default, Reflect)]
+pub struct Occupier;
+
 #[derive(Default, Resource, Reflect)]
 pub struct CurrentBoard {
     pub tiles: HashMap<Vector2Int, TileType>,

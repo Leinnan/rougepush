@@ -12,12 +12,12 @@ pub enum MainGameState {
     Game,
 }
 
-#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Default, Clone, States)]
 pub enum GameTurnSteps {
-    PrepareActionList,
+    #[default]
+    None,
     ActionSelection,
     PerformAction,
-    AnimAction,
 }
 
 pub struct GameStatesPlugin;
@@ -26,16 +26,18 @@ impl Plugin for GameStatesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((MenuPlugin, ButtonsReleasedPlugin))
             .init_state::<MainGameState>()
-            .configure_sets(
-                Update,
-                (
-                    GameTurnSteps::PrepareActionList,
-                    GameTurnSteps::ActionSelection,
-                    GameTurnSteps::PerformAction,
-                    GameTurnSteps::AnimAction,
-                )
-                    .chain()
-                    .run_if(in_state(MainGameState::Game)),
+            .init_state::<GameTurnSteps>()
+            .add_systems(
+                OnEnter(GameTurnSteps::ActionSelection),
+                (set_current_actor,prepare_action_list).chain()
             );
     }
+}
+
+fn set_current_actor(){
+    info!("CC");
+}
+
+fn prepare_action_list(){
+    info!("DD");
 }
