@@ -36,40 +36,14 @@ fn generate_world(
     let options_f = [685, 734, 774, 775, 830, 831];
     let f = || *options_f.choose(&mut rand::thread_rng()).unwrap();
 
-    // add zero padding to the map
-    // map.insert(0, vec![0; map[0].len()]);
-    // map.push(vec![0; map[0].len()]);
-    // for row in map.iter_mut() {
-    //     row.insert(0, 0);
-    //     row.push(0);
-    // }
-
-    // might be nice to add built-in support for sprite-merging for tilemaps...
-    // though since all the meshes and materials are already cached and reused,
-    // I wonder how much of a speedup that'd actually be. Food for thought.
-
+    let wall_atlas = TextureAtlas {
+        layout: assets.layout.clone(),
+        index: 843,
+    };
+    
     info!("World generate- floors");
-    for (pos, _) in map.iter() {
+    for (pos, tile_type) in map.iter() {
         let (x, y) = (pos.x as f32, pos.y as f32);
-
-        let atlas = TextureAtlas {
-            layout: assets.layout.clone(),
-            index: f(),
-        };
-
-        commands
-            .spawn(
-                Sprite3d {
-                    image: assets.image.clone(),
-                    pixels_per_metre: 16.,
-                    double_sided: false,
-                    transform: Transform::from_xyz(x, 0.0, y)
-                        .with_rotation(Quat::from_rotation_x(-std::f32::consts::PI / 2.0)),
-                    ..default()
-                }
-                .bundle_with_atlas(&mut sprite_params, atlas),
-            )
-            .insert(Name::new(format!("Tile{}x{}", x, y)));
 
         let surounding_elements = [
             (
@@ -97,16 +71,60 @@ fn generate_world(
                 0.0,
             ),
         ];
+        if tile_type == &TileType::Pit {
+            for el in surounding_elements
+                .iter()
+                .filter(|e| e.0.is_some() && e.0.unwrap() == &TileType::BaseFloor)
+            {
+                let (x, y) = (x, y);
+
+                for i in [-1, -2] {
+
+                    commands
+                        .spawn(
+                            Sprite3d {
+                                image: assets.image.clone(),
+                                pixels_per_metre: 16.,
+                                double_sided: false,
+                                transform: Transform::from_xyz(
+                                    x + el.2,
+                                    i as f32 + 0.499,
+                                    y + el.3,
+                                )
+                                .with_rotation(el.1),
+                                ..default()
+                            }
+                            .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
+                        )
+                        .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)));
+                }
+            }
+            continue;
+        }
+
+        let atlas = TextureAtlas {
+            layout: assets.layout.clone(),
+            index: f(),
+        };
+
+        commands
+            .spawn(
+                Sprite3d {
+                    image: assets.image.clone(),
+                    pixels_per_metre: 16.,
+                    double_sided: false,
+                    transform: Transform::from_xyz(x, 0.0, y)
+                        .with_rotation(Quat::from_rotation_x(-std::f32::consts::PI / 2.0)),
+                    ..default()
+                }
+                .bundle_with_atlas(&mut sprite_params, atlas),
+            )
+            .insert(Name::new(format!("Tile{}x{}", x, y)));
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
             let (x, y) = (x, y);
 
             for i in [0, 1] {
-                // add bottom and top piece
-                let atlas = TextureAtlas {
-                    layout: assets.layout.clone(),
-                    index: 843,
-                };
 
                 commands
                     .spawn(
@@ -118,7 +136,7 @@ fn generate_world(
                                 .with_rotation(el.1),
                             ..default()
                         }
-                        .bundle_with_atlas(&mut sprite_params, atlas),
+                        .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                     )
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)));
             }
