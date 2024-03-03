@@ -1,4 +1,4 @@
-use crate::{FaceCamera, ImageAssets, MyStates};
+use crate::{states, FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use bevy_third_person_camera::controller::*;
@@ -14,7 +14,7 @@ impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TileType>().add_systems(
             Update,
-            (generate_world, generator::create_map).run_if(in_state(MyStates::Next)),
+            (generate_world, generator::create_map).run_if(in_state(states::MainGameState::Game)),
         );
     }
 }
@@ -40,7 +40,7 @@ fn generate_world(
         layout: assets.layout.clone(),
         index: 843,
     };
-    
+
     info!("World generate- floors");
     for (pos, tile_type) in map.iter() {
         let (x, y) = (pos.x as f32, pos.y as f32);
@@ -79,7 +79,6 @@ fn generate_world(
                 let (x, y) = (x, y);
 
                 for i in [-1, -2] {
-
                     commands
                         .spawn(
                             Sprite3d {
@@ -125,7 +124,6 @@ fn generate_world(
             let (x, y) = (x, y);
 
             for i in [0, 1] {
-
                 commands
                     .spawn(
                         Sprite3d {
@@ -153,7 +151,7 @@ fn generate_world(
             image: assets.image_transparent.clone(),
             pixels_per_metre: 16.,
             double_sided: true,
-            transform: Transform::from_xyz(7.0, 0.5, 3.0),
+            transform: Transform::from_xyz(9.0, 0.5, 3.0),
             ..default()
         }
         .bundle_with_atlas(&mut sprite_params, atlas_player),

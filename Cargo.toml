@@ -20,6 +20,7 @@ console_error_panic_hook = "0.1"
 bevy_sprite3d = "2.8.0"
 bevy_tweening = "0.10.0"
 bevy_asset_loader = {version="0.20", features=["2d"]}
+bevy_button_released_plugin = "0.5"
 seldom_fn_plugin = "0.6"
 bevy_egui = "0.25.0"
 bevy-inspector-egui = "0.23.2"

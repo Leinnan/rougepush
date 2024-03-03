@@ -15,6 +15,7 @@ use bevy_third_person_camera::*;
 mod board;
 mod consts;
 mod debug;
+mod states;
 mod vectors;
 
 #[derive(Resource, AssetCollection)]
@@ -31,13 +32,6 @@ struct ImageAssets {
 #[derive(Component)]
 struct FaceCamera;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
-enum MyStates {
-    #[default]
-    AssetLoading,
-    Next,
-}
-
 #[derive(Component)]
 struct DelayedStart(pub Timer);
 
@@ -51,21 +45,24 @@ fn main() {
             ThirdPersonCameraPlugin,
             debug::DebugPlugin,
             board::BoardPlugin,
+            states::GameStatesPlugin,
         ))
-        .add_systems(OnEnter(MyStates::Next), |mut commands: Commands| {
-            commands.spawn(DelayedStart(Timer::new(
-                Duration::from_secs_f32(0.3),
-                TimerMode::Once,
-            )));
-        })
+        .add_systems(
+            OnEnter(states::MainGameState::Game),
+            |mut commands: Commands| {
+                commands.spawn(DelayedStart(Timer::new(
+                    Duration::from_secs_f32(0.3),
+                    TimerMode::Once,
+                )));
+            },
+        )
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
-        .init_state::<MyStates>()
         .add_systems(Update, face_camera)
         .add_loading_state(
-            LoadingState::new(MyStates::AssetLoading)
-                .continue_to_state(MyStates::Next)
+            LoadingState::new(states::MainGameState::AssetLoading)
+                .continue_to_state(states::MainGameState::Menu)
                 .load_collection::<ImageAssets>(),
         )
         .run();
@@ -84,20 +81,7 @@ fn face_camera(
     }
 }
 
-fn setup(
-    mut commands: Commands,
-    // mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    // circular base
-    // commands.spawn(PbrBundle {
-    //     mesh: meshes.add(Circle::new(4.0)),
-    //     material: materials.add(Color::WHITE),
-    //     transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-    //     ..default()
-    // });
-
-    // light
+fn setup(mut commands: Commands) {
     commands.spawn(PointLightBundle {
         point_light: PointLight {
             shadows_enabled: true,
@@ -125,7 +109,7 @@ fn setup(
             ..default()
         },
         Camera3dBundle {
-            transform: Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(9.0, 2.9, -2.2).looking_at(Vec3::ZERO, Vec3::Y),
             tonemapping: bevy::core_pipeline::tonemapping::Tonemapping::AgX,
             ..default()
         },

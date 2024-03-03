@@ -496,6 +496,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_button_released_plugin"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7f30823dab4563ff17e5b39a4e803d60b826bd07725772a011ca414352f8f9b"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_core"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3289,6 +3298,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_asset_loader",
+ "bevy_button_released_plugin",
  "bevy_egui",
  "bevy_sprite3d",
  "bevy_third_person_camera",
