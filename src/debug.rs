@@ -7,11 +7,18 @@ use bevy_inspector_egui::{
     bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin,
 };
 
+#[derive(Resource, Reflect)]
+pub struct RunArgs(pub Vec<String>);
+
 pub struct DebugPlugin;
 
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, git_info)
+        let args: Vec<String> = std::env::args().collect();
+        info!("{:?}", args);
+        app.register_type::<RunArgs>()
+            .insert_resource(RunArgs(args))
+            .add_systems(Startup, git_info)
             .add_systems(
                 Update,
                 inspector_ui.run_if(input_toggle_active(false, KeyCode::F1)),

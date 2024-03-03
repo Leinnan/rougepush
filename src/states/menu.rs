@@ -1,5 +1,5 @@
-use crate::consts;
 use crate::states::MainGameState;
+use crate::{consts, debug::RunArgs};
 use bevy::prelude::*;
 
 use bevy_button_released_plugin::{ButtonReleasedEvent, GameButton};
@@ -52,11 +52,22 @@ fn button_system(
 }
 
 fn cleanup_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
-    let menu_root = query.single();
+    let Ok(menu_root) = query.get_single() else {
+        return;
+    };
     commands.entity(menu_root).despawn_recursive();
 }
 
-fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_menu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut next_state: ResMut<NextState<MainGameState>>,
+    args: Res<RunArgs>,
+) {
+    if args.0.iter().any(|s| s.eq("--skip-menu")) {
+        next_state.set(MainGameState::Game);
+        return;
+    }
     commands
         .spawn(NodeBundle {
             background_color: BackgroundColor::from(Color::hex("3A4D39").unwrap()),

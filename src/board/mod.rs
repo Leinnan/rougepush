@@ -12,10 +12,12 @@ pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<TileType>().add_systems(
-            Update,
-            (generate_world, generator::create_map).run_if(in_state(states::MainGameState::Game)),
-        );
+        app.register_type::<TileType>()
+            .add_systems(OnEnter(states::MainGameState::Game), generator::create_map)
+            .add_systems(
+                Update,
+                (generate_world).run_if(in_state(states::MainGameState::Game)),
+            );
     }
 }
 

@@ -4,7 +4,6 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
@@ -32,10 +31,12 @@ struct ImageAssets {
 #[derive(Component)]
 struct FaceCamera;
 
-#[derive(Component)]
-struct DelayedStart(pub Timer);
+#[derive(Resource, Reflect)]
+pub struct RunArgs(pub Vec<String>);
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    info!("{:?}", args);
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     App::new()
@@ -47,16 +48,8 @@ fn main() {
             board::BoardPlugin,
             states::GameStatesPlugin,
         ))
-        .add_systems(
-            OnEnter(states::MainGameState::Game),
-            |mut commands: Commands| {
-                commands.spawn(DelayedStart(Timer::new(
-                    Duration::from_secs_f32(0.3),
-                    TimerMode::Once,
-                )));
-            },
-        )
         .add_systems(Startup, setup)
+        .register_type::<RunArgs>()
         .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
         .add_systems(Update, face_camera)
