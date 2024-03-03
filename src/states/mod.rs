@@ -83,6 +83,9 @@ fn prepare_action_list(
          if !board.tiles.contains_key(&target_pos) {
              continue;
          };
+         // THIS DOESNT WORK- MAYBE I NEED TO SPLIT IT INTO TWO STEPS
+         // FIRST GATHER ALL POSSIBLE ACTIONS
+         // SECOND REMOVE THOSE THAT ARE NOT AVAILABLE
         //  let query = world
         //  .query_filtered::<&PiecePos, With<Occupier>>();
         //  if query.iter(world)
