@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::ops::DerefMut;
 
 use crate::{
-    actions::{walk::WalkAction, Action, RegisterActions},
+    actions::{melee_hit::MeleeHitAction, walk::WalkAction, Action, RegisterActions},
     board::components::*,
     vectors::Vector2Int,
 };
@@ -111,8 +111,9 @@ fn set_current_actor(mut commands: Commands, query: Query<(Entity, &Piece)>) {
 
 fn prepare_action_list(world: &mut World) {
     info!("prepare_action_list");
-    let mut query = world.query_filtered::<(Entity, &Piece, &PiecePos), With<CurrentActorToken>>();
-    let Ok((entity, _piece, pos)) = query.get_single(world) else {
+    let mut query = world
+        .query_filtered::<(Entity, &Piece, &PiecePos, Option<&Melee>), With<CurrentActorToken>>();
+    let Ok((entity, _piece, pos, melee)) = query.get_single(world) else {
         return;
     };
 
@@ -130,6 +131,16 @@ fn prepare_action_list(world: &mut World) {
         let walk = WalkAction(entity, target_pos, key_code);
 
         possible_actions.push(Box::new(walk));
+
+        if let Some(melee_attack) = melee {
+            let attack = MeleeHitAction {
+                attacker: entity,
+                target: target_pos,
+                damage: melee_attack.damage,
+                key: Some(key_code),
+            };
+            possible_actions.push(Box::new(attack));
+        }
     }
     world
         .entity_mut(entity)
@@ -170,8 +181,10 @@ fn select_action(
     };
     let mut action_index = None;
     for (index, action) in actions.0.iter().enumerate() {
-        if keys.just_released(action.get_key_code()) {
-            action_index = Some(index);
+        if let Some(key) = action.get_key_code() {
+            if keys.just_released(key) {
+                action_index = Some(index);
+            }
         }
     }
     if action_index.is_some() {

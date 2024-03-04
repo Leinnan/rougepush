@@ -1,4 +1,5 @@
 use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy_inspector_egui::InspectorOptions;
 
 use crate::vectors::Vector2Int;
 
@@ -31,4 +32,15 @@ impl CurrentBoard {
     pub fn get(&self, x: i32, y: i32) -> Option<&TileType> {
         self.tiles.get(&Vector2Int { x, y })
     }
+}
+
+#[derive(Component, Reflect, InspectorOptions)]
+pub struct Health {
+    pub value: u32,
+}
+
+/// melee attack behaviour for the npcs
+#[derive(Component, Reflect, InspectorOptions)]
+pub struct Melee {
+    pub damage: u32,
 }

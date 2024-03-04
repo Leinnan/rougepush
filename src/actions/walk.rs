@@ -1,4 +1,4 @@
-use std::{ops::Deref};
+use std::ops::Deref;
 
 use super::Action;
 use crate::{board::components::*, states::*, vectors::Vector2Int};
@@ -47,8 +47,8 @@ impl WalkAction {
 }
 
 impl Action for WalkAction {
-    fn get_key_code(&self) -> KeyCode {
-        self.2
+    fn get_key_code(&self) -> Option<KeyCode> {
+        Some(self.2)
     }
     fn execute(&self, world: &mut World) -> bool {
         let Some(board) = world.get_resource::<CurrentBoard>() else {

@@ -15,6 +15,8 @@ impl Plugin for BoardPlugin {
         app.register_type::<TileType>()
             .register_type::<Piece>()
             .register_type::<PiecePos>()
+            .register_type::<Health>()
+            .register_type::<Melee>()
             .add_systems(OnEnter(states::MainGameState::Game), generator::create_map)
             .add_systems(
                 Update,
@@ -150,7 +152,19 @@ fn generate_world(
         }
     }
 
-    commands.spawn((Piece::Player, Occupier, PiecePos(Vector2Int::new(9, 1))));
+    commands.spawn((
+        Piece::Player,
+        Occupier,
+        Health { value: 3 },
+        Melee { damage: 2 },
+        PiecePos(Vector2Int::new(9, 1)),
+    ));
 
-    commands.spawn((Piece::Enemy, Occupier, PiecePos(Vector2Int::new(9, 2))));
+    commands.spawn((
+        Piece::Enemy,
+        Occupier,
+        Health { value: 1 },
+        Melee { damage: 1 },
+        PiecePos(Vector2Int::new(9, 2)),
+    ));
 }
