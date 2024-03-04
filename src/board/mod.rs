@@ -175,6 +175,15 @@ fn generate_world(
         ActionDelay(1),
         Health { value: 1 },
         Melee { damage: 1 },
-        PiecePos(Vector2Int::new(9, 2)),
+        PiecePos(Vector2Int::new(9, 5)),
+    ));
+    commands.spawn((
+        Piece::Enemy,
+        Occupier,
+        AiControl,
+        ActionDelay(1),
+        Health { value: 1 },
+        Melee { damage: 1 },
+        PiecePos(Vector2Int::new(10, 6)),
     ));
 }

@@ -6,6 +6,7 @@ use bevy::prelude::*;
 
 pub struct MeleeHitAction {
     pub attacker: Entity,
+    pub attacker_type: Piece,
     pub target: Vector2Int,
     pub damage: u32,
     pub key: Option<KeyCode>,
@@ -19,9 +20,9 @@ impl Action for MeleeHitAction {
             return false;
         };
         let target_entities = world
-            .query_filtered::<(Entity, &PiecePos), With<Health>>()
+            .query_filtered::<(Entity, &PiecePos, &Piece), With<Health>>()
             .iter(world)
-            .filter(|(_, p)| p.0 == self.target)
+            .filter(|(_, p, piece)| p.0 == self.target && &self.attacker_type != *piece)
             .collect::<Vec<_>>();
         if target_entities.is_empty() {
             return false;

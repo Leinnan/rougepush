@@ -126,7 +126,7 @@ fn prepare_action_list(world: &mut World) {
     info!("prepare_action_list");
     let mut query = world
         .query_filtered::<(Entity, &Piece, &PiecePos, Option<&Melee>), With<CurrentActorToken>>();
-    let Ok((entity, _piece, pos, melee)) = query.get_single(world) else {
+    let Ok((entity, piece, pos, melee)) = query.get_single(world) else {
         return;
     };
 
@@ -148,6 +148,7 @@ fn prepare_action_list(world: &mut World) {
         if let Some(melee_attack) = melee {
             let attack = MeleeHitAction {
                 attacker: entity,
+                attacker_type: piece.clone(),
                 target: target_pos,
                 damage: melee_attack.damage,
                 key: Some(key_code),
