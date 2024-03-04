@@ -146,5 +146,7 @@ fn generate_world(
         }
     }
 
-    commands.spawn((Piece::Player, PiecePos(Vector2Int::new(9, 3))));
+    commands.spawn((Piece::Player, Occupier, PiecePos(Vector2Int::new(9, 1))));
+
+    commands.spawn((Piece::Enemy, Occupier, PiecePos(Vector2Int::new(9, 2))));
 }

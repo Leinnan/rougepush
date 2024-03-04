@@ -10,7 +10,7 @@ pub enum TileType {
     Pit,
 }
 
-#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub enum Piece {
     Player,
     Enemy,

@@ -14,9 +14,10 @@ pub fn spawn_piece_renderer(
     for (entity, pos, piece) in query.iter() {
         let atlas = TextureAtlas {
             layout: assets.layout.clone(),
-            index: if piece == &Piece::Player { 26 } else { 27 },
+            index: if piece == &Piece::Player { 26 } else { 125 },
         };
-        commands.entity(entity).insert((
+        let mut entity_cmd = commands.entity(entity);
+        entity_cmd.insert((
             Sprite3d {
                 image: assets.image_transparent.clone(),
                 pixels_per_metre: 16.,
@@ -25,10 +26,14 @@ pub fn spawn_piece_renderer(
                 ..default()
             }
             .bundle_with_atlas(&mut sprite_params, atlas),
-            bevy_third_person_camera::ThirdPersonCameraTarget,
-            ThirdPersonController::default(), // optional if you want movement controls
-            Name::new("Player"),
+            Name::new(format!("{:?}", &piece)),
             FaceCamera,
         ));
+        if piece == &Piece::Player {
+            entity_cmd.insert((
+                bevy_third_person_camera::ThirdPersonCameraTarget,
+                ThirdPersonController::default(), // TODO To be removed once I have the actions working
+            ));
+        }
     }
 }
