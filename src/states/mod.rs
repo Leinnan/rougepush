@@ -1,8 +1,8 @@
 pub mod menu;
-use std::ops::{DerefMut};
-
 use bevy::prelude::*;
 use bevy_button_released_plugin::*;
+use std::collections::VecDeque;
+use std::ops::DerefMut;
 
 use crate::{
     actions::{walk::WalkAction, Action, RegisterActions},
@@ -45,8 +45,8 @@ pub struct ActionsToRemove(pub Vec<usize>);
 #[derive(Default, Debug, Reflect, Component)]
 pub struct CurrentActorToken;
 
-#[derive(Deref, DerefMut, Resource)]
-pub struct SelectedAction(pub Box<dyn Action>);
+#[derive(Default, Resource, Deref, DerefMut)]
+pub struct PendingActions(pub VecDeque<Box<dyn Action>>);
 
 pub struct GameStatesPlugin;
 
@@ -57,6 +57,7 @@ impl Plugin for GameStatesPlugin {
             .init_state::<GameTurnSteps>()
             .register_type::<CurrentActorToken>()
             .register_all_actions()
+            .init_resource::<PendingActions>()
             .add_systems(Update, find_actor.run_if(in_state(GameTurnSteps::None)))
             .configure_sets(
                 OnEnter(GameTurnSteps::ActionSelection),
@@ -160,9 +161,9 @@ fn remove_moves(
 
 fn select_action(
     keys: ResMut<ButtonInput<KeyCode>>,
-    mut commands: Commands,
     mut q: Query<&mut PossibleActions>,
     mut next_state: ResMut<NextState<GameTurnSteps>>,
+    mut action_queue: ResMut<PendingActions>,
 ) {
     let Ok(mut actions) = q.get_single_mut() else {
         return;
@@ -175,22 +176,24 @@ fn select_action(
     }
     if action_index.is_some() {
         let action_moved = actions.0.remove(action_index.unwrap());
-        commands.insert_resource(SelectedAction(action_moved));
+        action_queue.push_back(action_moved);
         next_state.set(GameTurnSteps::PerformAction);
     }
 }
 
 fn execute_pending_action(world: &mut World) {
-    let Some(action) = world.remove_resource::<SelectedAction>() else {
+    let Some(mut actions) = world.get_resource_mut::<PendingActions>() else {
+        return;
+    };
+
+    let Some(action) = actions.pop_front() else {
         let Some(mut state) = world.get_resource_mut::<NextState<GameTurnSteps>>() else {
             return;
         };
         state.set(GameTurnSteps::ActionSelection);
         return;
     };
-    let action = action.0;
-    match action.execute(world) {
-        Ok(_) => {},
-        Err(_) => error!("Error during action "),
-    }
+    if !action.execute(world) {
+        error!("Error during action ");
+    };
 }

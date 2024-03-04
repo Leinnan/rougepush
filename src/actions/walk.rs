@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{ops::Deref};
 
 use super::Action;
 use crate::{board::components::*, states::*, vectors::Vector2Int};
@@ -50,22 +50,28 @@ impl Action for WalkAction {
     fn get_key_code(&self) -> KeyCode {
         self.2
     }
-    fn execute(&self, world: &mut World) -> Result<Vec<Box<dyn Action>>, ()> {
-        let board = world.get_resource::<CurrentBoard>().ok_or(())?;
+    fn execute(&self, world: &mut World) -> bool {
+        let Some(board) = world.get_resource::<CurrentBoard>() else {
+            return false;
+        };
         if !board.tiles.contains_key(&self.1) {
-            return Err(());
+            return false;
         };
         if world
             .query_filtered::<&PiecePos, With<Occupier>>()
             .iter(world)
             .any(|p| p.0 == self.1)
         {
-            return Err(());
+            return false;
         };
-        let mut position = world.get_mut::<PiecePos>(self.0).ok_or(())?;
+        let Some(mut position) = world.get_mut::<PiecePos>(self.0) else {
+            return false;
+        };
         position.0 = self.1;
-        Ok(Vec::new())
+
+        true
     }
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
