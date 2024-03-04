@@ -43,6 +43,12 @@ impl Action for MeleeHitAction {
     fn get_key_code(&self) -> Option<KeyCode> {
         self.key
     }
+    fn action_type(&self) -> super::ActionType {
+        super::ActionType::MeleeeHit
+    }
+    fn target_pos(&self) -> Option<Vector2Int> {
+        Some(self.target)
+    }
 }
 
 impl MeleeHitAction {

@@ -44,3 +44,9 @@ pub struct Health {
 pub struct Melee {
     pub damage: u32,
 }
+
+#[derive(Component, Reflect)]
+pub struct PlayerControl;
+
+#[derive(Component, Reflect)]
+pub struct AiControl;

@@ -1,13 +1,16 @@
 pub mod menu;
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    utils::{HashMap, HashSet},
+};
 use bevy_button_released_plugin::*;
-use std::collections::VecDeque;
+use std::collections::{BinaryHeap, VecDeque};
 use std::ops::DerefMut;
 
 use crate::{
-    actions::{melee_hit::MeleeHitAction, walk::WalkAction, Action, RegisterActions},
+    actions::{melee_hit::MeleeHitAction, walk::WalkAction, Action, ActionType, RegisterActions},
     board::components::*,
-    vectors::Vector2Int,
+    vectors::{Vector2Int, ORTHO_DIRECTIONS},
 };
 
 use self::menu::MenuPlugin;
@@ -48,6 +51,9 @@ pub struct CurrentActorToken;
 #[derive(Default, Resource, Deref, DerefMut)]
 pub struct PendingActions(pub VecDeque<Box<dyn Action>>);
 
+#[derive(Deref, DerefMut, Component, Default, Reflect)]
+pub struct ActionDelay(pub usize);
+
 pub struct GameStatesPlugin;
 
 impl Plugin for GameStatesPlugin {
@@ -56,6 +62,7 @@ impl Plugin for GameStatesPlugin {
             .init_state::<MainGameState>()
             .init_state::<GameTurnSteps>()
             .register_type::<CurrentActorToken>()
+            .register_type::<ActionDelay>()
             .register_all_actions()
             .init_resource::<PendingActions>()
             .add_systems(Update, find_actor.run_if(in_state(GameTurnSteps::None)))
@@ -83,12 +90,15 @@ impl Plugin for GameStatesPlugin {
             )
             .add_systems(
                 Update,
-                select_action.run_if(in_state(GameTurnSteps::ActionSelection)),
+                (select_action, ai_select_action)
+                    .chain()
+                    .run_if(in_state(GameTurnSteps::ActionSelection)),
             )
             .add_systems(
                 Update,
                 execute_pending_action.run_if(in_state(GameTurnSteps::PerformAction)),
-            );
+            )
+            .add_systems(OnExit(GameTurnSteps::PerformAction), remove_token);
     }
 }
 
@@ -98,14 +108,17 @@ fn find_actor(query: Query<(Entity, &Piece)>, mut next_state: ResMut<NextState<G
     }
 }
 
-fn set_current_actor(mut commands: Commands, query: Query<(Entity, &Piece)>) {
+fn set_current_actor(mut commands: Commands, query: Query<(Entity, &ActionDelay), With<Piece>>) {
     info!("set_current_actor");
-    for (entity, piece) in query.iter() {
-        if piece == &Piece::Player {
-            info!("CURRENT TOKEN");
-            commands.entity(entity).insert(CurrentActorToken);
-            break;
+    let mut lowest_delay = (usize::MAX, Entity::PLACEHOLDER);
+    for (entity, delay) in query.iter() {
+        if **delay < lowest_delay.0 {
+            lowest_delay.0 = **delay;
+            lowest_delay.1 = entity;
         }
+    }
+    if lowest_delay.0 < usize::MAX {
+        commands.entity(lowest_delay.1).insert(CurrentActorToken);
     }
 }
 
@@ -150,7 +163,7 @@ fn prepare_action_list(world: &mut World) {
 
 fn remove_moves(
     mut commands: Commands,
-    mut q: Query<(&mut PossibleActions, &ActionsToRemove, Entity)>,
+    mut q: Query<(&mut PossibleActions, &ActionsToRemove, Entity), With<CurrentActorToken>>,
 ) {
     let Ok((mut actions, to_remove, entity)) = q.get_single_mut() else {
         return;
@@ -172,11 +185,11 @@ fn remove_moves(
 
 fn select_action(
     keys: ResMut<ButtonInput<KeyCode>>,
-    mut q: Query<&mut PossibleActions>,
+    mut q: Query<(&mut PossibleActions, &PlayerControl), With<CurrentActorToken>>,
     mut next_state: ResMut<NextState<GameTurnSteps>>,
     mut action_queue: ResMut<PendingActions>,
 ) {
-    let Ok(mut actions) = q.get_single_mut() else {
+    let Ok((mut actions, _)) = q.get_single_mut() else {
         return;
     };
     let mut action_index = None;
@@ -189,6 +202,56 @@ fn select_action(
     }
     if action_index.is_some() {
         let action_moved = actions.0.remove(action_index.unwrap());
+        action_queue.push_back(action_moved);
+        next_state.set(GameTurnSteps::PerformAction);
+    }
+}
+
+fn ai_select_action(
+    mut q: Query<(&PiecePos, &mut PossibleActions, &AiControl), With<CurrentActorToken>>,
+    mut next_state: ResMut<NextState<GameTurnSteps>>,
+    player_query: Query<&PiecePos, With<PlayerControl>>,
+    mut action_queue: ResMut<PendingActions>,
+    occupier_query: Query<&PiecePos, With<Occupier>>,
+    board: Res<CurrentBoard>,
+) {
+    let Ok((position, mut actions, _ai)) = q.get_single_mut() else {
+        return;
+    };
+    let Ok(player_position) = player_query.get_single() else {
+        return;
+    };
+    let mut action_index = None;
+
+    // find possible path to the player
+    let path_to_player = find_path(
+        position.0,
+        player_position.0,
+        &board.tiles.clone(),
+        &occupier_query.iter().map(|p| p.0).collect(),
+        false,
+    );
+    info!("{:?}", path_to_player);
+    for (index, action) in actions.0.iter().enumerate() {
+        if action.action_type() == ActionType::MeleeeHit {
+            action_index = Some(index);
+            break;
+        }
+        if action.action_type() == ActionType::Walk {
+            if let Some(path) = &path_to_player {
+                if path.contains(&action.target_pos().unwrap()) {
+                    action_index = Some(index);
+                }
+            }
+        }
+    }
+    if action_index.is_some() {
+        let action_moved = actions.0.remove(action_index.unwrap());
+        info!(
+            "ACTION SELECTED: {:?} -> {:?}",
+            action_moved.action_type(),
+            action_moved.target_pos()
+        );
         action_queue.push_back(action_moved);
         next_state.set(GameTurnSteps::PerformAction);
     }
@@ -209,4 +272,72 @@ fn execute_pending_action(world: &mut World) {
     if !action.execute(world) {
         error!("Error during action ");
     };
+}
+
+fn remove_token(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut ActionDelay), With<CurrentActorToken>>,
+) {
+    let Ok((entity, mut delay)) = query.get_single_mut() else {
+        return;
+    };
+    delay.0 = **delay + 2;
+    commands.entity(entity).remove::<CurrentActorToken>();
+}
+
+pub fn find_path(
+    start: Vector2Int,
+    end: Vector2Int,
+    tiles: &HashMap<Vector2Int, TileType>,
+    blockers: &HashSet<Vector2Int>,
+    is_flying: bool,
+) -> Option<VecDeque<Vector2Int>> {
+    let mut queue = BinaryHeap::new();
+    queue.push(crate::vectors::utils::Node { v: start, cost: 0 });
+    let mut visited = HashMap::new();
+    visited.insert(start, 0);
+    let mut came_from = HashMap::new();
+
+    while let Some(crate::vectors::utils::Node { v, cost }) = queue.pop() {
+        if v == end {
+            break;
+        }
+        for dir in ORTHO_DIRECTIONS {
+            let n = v + dir;
+            let new_cost = cost + 1;
+            if !tiles.contains_key(&n) {
+                continue;
+            }
+            match (&tiles[&n], is_flying) {
+                (&TileType::Pit, false) => continue,
+                (&TileType::None, _) => continue,
+                _ => {}
+            }
+            // we allow the target to be a blocker
+            if blockers.contains(&n) && n != end {
+                continue;
+            }
+            match visited.get(&n) {
+                Some(c) if *c <= new_cost => (),
+                _ => {
+                    visited.insert(n, new_cost);
+                    queue.push(crate::vectors::utils::Node {
+                        v: n,
+                        cost: new_cost,
+                    });
+                    came_from.insert(n, v);
+                }
+            }
+        }
+    }
+    let mut path = VecDeque::new();
+    let mut cur = end;
+    while let Some(v) = came_from.get(&cur) {
+        path.push_front(cur);
+        cur = *v;
+        if cur == start {
+            return Some(path);
+        }
+    }
+    None
 }

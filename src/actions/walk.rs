@@ -75,4 +75,10 @@ impl Action for WalkAction {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+    fn action_type(&self) -> super::ActionType {
+        super::ActionType::Walk
+    }
+    fn target_pos(&self) -> Option<Vector2Int> {
+        Some(self.1)
+    }
 }

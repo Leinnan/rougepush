@@ -1,4 +1,8 @@
-use crate::{states, vectors::Vector2Int, ImageAssets};
+use crate::{
+    states::{self, ActionDelay},
+    vectors::Vector2Int,
+    ImageAssets,
+};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use components::*;
@@ -16,6 +20,8 @@ impl Plugin for BoardPlugin {
             .register_type::<Piece>()
             .register_type::<PiecePos>()
             .register_type::<Health>()
+            .register_type::<PlayerControl>()
+            .register_type::<AiControl>()
             .register_type::<Melee>()
             .add_systems(OnEnter(states::MainGameState::Game), generator::create_map)
             .add_systems(
@@ -155,6 +161,8 @@ fn generate_world(
     commands.spawn((
         Piece::Player,
         Occupier,
+        PlayerControl,
+        ActionDelay(0),
         Health { value: 3 },
         Melee { damage: 2 },
         PiecePos(Vector2Int::new(9, 1)),
@@ -163,6 +171,8 @@ fn generate_world(
     commands.spawn((
         Piece::Enemy,
         Occupier,
+        AiControl,
+        ActionDelay(1),
         Health { value: 1 },
         Melee { damage: 1 },
         PiecePos(Vector2Int::new(9, 2)),
