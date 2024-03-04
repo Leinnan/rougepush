@@ -1,7 +1,6 @@
 use crate::{FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
-use bevy_third_person_camera::controller::*;
 
 use super::{Piece, PiecePos};
 
@@ -30,10 +29,13 @@ pub fn spawn_piece_renderer(
             FaceCamera,
         ));
         if piece == &Piece::Player {
-            entity_cmd.insert((
-                bevy_third_person_camera::ThirdPersonCameraTarget,
-                ThirdPersonController::default(), // TODO To be removed once I have the actions working
-            ));
+            entity_cmd.insert(bevy_third_person_camera::ThirdPersonCameraTarget);
         }
+    }
+}
+
+pub fn update_piece(mut query: Query<(&PiecePos, &mut Transform), Changed<PiecePos>>) {
+    for (pos, mut transofrm) in query.iter_mut() {
+        transofrm.translation = Vec3::new(pos.x as f32, 0.5, pos.y as f32);
     }
 }

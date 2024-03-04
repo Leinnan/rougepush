@@ -1,11 +1,11 @@
 pub mod menu;
-use std::ops::{Deref, DerefMut};
+use std::ops::{DerefMut};
 
 use bevy::prelude::*;
 use bevy_button_released_plugin::*;
 
 use crate::{
-    actions::{Action, WalkAction},
+    actions::{walk::WalkAction, Action, RegisterActions},
     board::components::*,
     vectors::Vector2Int,
 };
@@ -45,6 +45,9 @@ pub struct ActionsToRemove(pub Vec<usize>);
 #[derive(Default, Debug, Reflect, Component)]
 pub struct CurrentActorToken;
 
+#[derive(Deref, DerefMut, Resource)]
+pub struct SelectedAction(pub Box<dyn Action>);
+
 pub struct GameStatesPlugin;
 
 impl Plugin for GameStatesPlugin {
@@ -53,6 +56,7 @@ impl Plugin for GameStatesPlugin {
             .init_state::<MainGameState>()
             .init_state::<GameTurnSteps>()
             .register_type::<CurrentActorToken>()
+            .register_all_actions()
             .add_systems(Update, find_actor.run_if(in_state(GameTurnSteps::None)))
             .configure_sets(
                 OnEnter(GameTurnSteps::ActionSelection),
@@ -74,11 +78,15 @@ impl Plugin for GameStatesPlugin {
             )
             .add_systems(
                 OnEnter(GameTurnSteps::ActionSelection),
-                (trim_moves_into_abyss).in_set(PreparingActions::FindWrongMoves),
+                remove_moves.in_set(PreparingActions::TrimWrongMoves),
             )
             .add_systems(
-                OnEnter(GameTurnSteps::ActionSelection),
-                remove_moves.in_set(PreparingActions::TrimWrongMoves),
+                Update,
+                select_action.run_if(in_state(GameTurnSteps::ActionSelection)),
+            )
+            .add_systems(
+                Update,
+                execute_pending_action.run_if(in_state(GameTurnSteps::PerformAction)),
             );
     }
 }
@@ -109,8 +117,8 @@ fn prepare_action_list(world: &mut World) {
 
     info!("Found piece!");
     let dirs = vec![
-        (KeyCode::KeyA, Vector2Int::new(-1, 0)),
-        (KeyCode::KeyD, Vector2Int::new(1, 0)),
+        (KeyCode::KeyD, Vector2Int::new(-1, 0)),
+        (KeyCode::KeyA, Vector2Int::new(1, 0)),
         (KeyCode::KeyW, Vector2Int::new(0, 1)),
         (KeyCode::KeyS, Vector2Int::new(0, -1)),
     ];
@@ -126,37 +134,6 @@ fn prepare_action_list(world: &mut World) {
         .entity_mut(entity)
         .insert(PossibleActions(possible_actions))
         .insert(ActionsToRemove::default());
-}
-
-fn trim_moves_into_abyss(
-    mut q: Query<(&PossibleActions, &mut ActionsToRemove)>,
-    other_pieces: Query<&PiecePos, (With<Occupier>, Without<CurrentActorToken>)>,
-    board: Res<CurrentBoard>,
-) {
-    let Ok((actions, mut to_remove)) = q.get_single_mut() else {
-        return;
-    };
-    let actions = actions.deref().deref();
-    let mut wrong_actions = Vec::new();
-    for (index, boxed_action) in actions.iter().enumerate() {
-        let Some(action) = boxed_action.as_any().downcast_ref::<WalkAction>() else {
-            continue;
-        };
-        let mut is_valid_move = false;
-        if let Some(tile) = board.tiles.get(&action.1) {
-            if tile == &TileType::BaseFloor {
-                is_valid_move = true;
-            }
-        }
-        if other_pieces.iter().any(|p| p.0 == action.1) {
-            is_valid_move = false;
-        }
-        if !is_valid_move {
-            wrong_actions.push(index);
-        }
-    }
-    info!("TOREMOVE: {:?}", wrong_actions);
-    to_remove.0.append(&mut wrong_actions);
 }
 
 fn remove_moves(
@@ -179,4 +156,41 @@ fn remove_moves(
         remove_list.len(),
         actions.len()
     );
+}
+
+fn select_action(
+    keys: ResMut<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    mut q: Query<&mut PossibleActions>,
+    mut next_state: ResMut<NextState<GameTurnSteps>>,
+) {
+    let Ok(mut actions) = q.get_single_mut() else {
+        return;
+    };
+    let mut action_index = None;
+    for (index, action) in actions.0.iter().enumerate() {
+        if keys.just_released(action.get_key_code()) {
+            action_index = Some(index);
+        }
+    }
+    if action_index.is_some() {
+        let action_moved = actions.0.remove(action_index.unwrap());
+        commands.insert_resource(SelectedAction(action_moved));
+        next_state.set(GameTurnSteps::PerformAction);
+    }
+}
+
+fn execute_pending_action(world: &mut World) {
+    let Some(action) = world.remove_resource::<SelectedAction>() else {
+        let Some(mut state) = world.get_resource_mut::<NextState<GameTurnSteps>>() else {
+            return;
+        };
+        state.set(GameTurnSteps::ActionSelection);
+        return;
+    };
+    let action = action.0;
+    match action.execute(world) {
+        Ok(_) => {},
+        Err(_) => error!("Error during action "),
+    }
 }

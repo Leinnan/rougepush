@@ -18,7 +18,11 @@ impl Plugin for BoardPlugin {
             .add_systems(OnEnter(states::MainGameState::Game), generator::create_map)
             .add_systems(
                 Update,
-                (generate_world, renderer::spawn_piece_renderer)
+                (
+                    generate_world,
+                    renderer::spawn_piece_renderer,
+                    renderer::update_piece,
+                )
                     .run_if(in_state(states::MainGameState::Game)),
             );
     }
