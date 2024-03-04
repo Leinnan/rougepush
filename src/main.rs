@@ -15,6 +15,7 @@ mod actions;
 mod board;
 mod consts;
 mod debug;
+mod gui;
 mod states;
 mod vectors;
 
@@ -43,6 +44,7 @@ fn main() {
             debug::DebugPlugin,
             board::BoardPlugin,
             states::GameStatesPlugin,
+            gui::GameGuiPlugin,
         ))
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(consts::BG_COLOR))
