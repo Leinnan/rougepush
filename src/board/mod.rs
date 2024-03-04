@@ -30,6 +30,7 @@ impl Plugin for BoardPlugin {
                     generate_world,
                     renderer::spawn_piece_renderer,
                     renderer::update_piece,
+                    renderer::spawn_torches,
                 )
                     .run_if(in_state(states::MainGameState::Game)),
             );
@@ -138,8 +139,6 @@ fn generate_world(
             .insert(Name::new(format!("Tile{}x{}", x, y)));
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
-            let (x, y) = (x, y);
-
             for i in [0, 1] {
                 commands
                     .spawn(
@@ -154,6 +153,13 @@ fn generate_world(
                         .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                     )
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)));
+                if (pos.x + pos.y) % 10 == 0 {
+                    commands.spawn((
+                        Transform::from_xyz(x + el.2, 1.499, y + el.3).with_rotation(el.1),
+                        Name::new("TORCH"),
+                        Torch,
+                    ));
+                }
             }
         }
     }
