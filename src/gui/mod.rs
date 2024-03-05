@@ -59,7 +59,7 @@ fn update_info(
         for action in possible_actions.0.iter() {
             value.push_str(&format!(
                 "{:?}-> {:?}\n",
-                action.get_key_code().unwrap(),
+                action.get_input().unwrap(),
                 action.action_type()
             ));
         }

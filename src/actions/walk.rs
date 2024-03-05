@@ -1,11 +1,11 @@
 use std::ops::Deref;
 
 use super::Action;
-use crate::{board::components::*, states::*, vectors::Vector2Int};
+use crate::{board::components::*, input::InputAction, states::*, vectors::Vector2Int};
 use bevy::prelude::*;
 
 #[derive(Clone, Copy)]
-pub struct WalkAction(pub Entity, pub Vector2Int, pub KeyCode);
+pub struct WalkAction(pub Entity, pub Vector2Int, pub InputAction);
 
 impl WalkAction {
     pub fn register(app: &mut App) {
@@ -47,7 +47,7 @@ impl WalkAction {
 }
 
 impl Action for WalkAction {
-    fn get_key_code(&self) -> Option<KeyCode> {
+    fn get_input(&self) -> Option<InputAction> {
         Some(self.2)
     }
     fn execute(&self, world: &mut World) -> bool {

@@ -2,7 +2,7 @@ use crate::{FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 
-use super::{Piece, PiecePos, Torch};
+use super::{Piece, PiecePos};
 
 pub fn spawn_piece_renderer(
     mut commands: Commands,
@@ -37,21 +37,5 @@ pub fn spawn_piece_renderer(
 pub fn update_piece(mut query: Query<(&PiecePos, &mut Transform), Changed<PiecePos>>) {
     for (pos, mut transofrm) in query.iter_mut() {
         transofrm.translation = Vec3::new(pos.x as f32, 0.5, pos.y as f32);
-    }
-}
-
-pub fn spawn_torches(q: Query<(Entity, &Transform), Added<Torch>>, mut commands: Commands) {
-    for (e, t) in q.iter() {
-        commands.entity(e).insert(PointLightBundle {
-            point_light: PointLight {
-                shadows_enabled: true,
-                color: Color::rgb_u8(190, 150, 0),
-                range: 15.0,
-                intensity: 50_000.0,
-                ..default()
-            },
-            transform: *t,
-            ..default()
-        });
     }
 }

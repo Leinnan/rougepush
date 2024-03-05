@@ -28,6 +28,7 @@ rand = "0.8"
 bevy_third_person_camera = "0.1.10"
 winit = "0.29"
 image = "0.24"
+leafwing-input-manager = "0.13.3"
 
 [dependencies.bevy]
 version = "0.13"

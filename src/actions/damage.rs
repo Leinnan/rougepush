@@ -1,5 +1,5 @@
 use super::Action;
-use crate::{board::components::*, vectors::Vector2Int};
+use crate::{board::components::*, input::InputAction, vectors::Vector2Int};
 use bevy::prelude::*;
 
 pub struct DamageAction(pub Entity, pub u32);
@@ -17,7 +17,7 @@ impl Action for DamageAction {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    fn get_key_code(&self) -> Option<KeyCode> {
+    fn get_input(&self) -> Option<InputAction> {
         None
     }
     fn action_type(&self) -> super::ActionType {

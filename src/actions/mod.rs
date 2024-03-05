@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use std::any::Any;
 
-use crate::vectors::Vector2Int;
+use crate::{input::InputAction, vectors::Vector2Int};
 
 use self::{melee_hit::MeleeHitAction, walk::WalkAction};
 
@@ -10,7 +10,7 @@ pub mod melee_hit;
 pub mod walk;
 
 pub trait Action: Send + Sync {
-    fn get_key_code(&self) -> Option<KeyCode>;
+    fn get_input(&self) -> Option<InputAction>;
     fn execute(&self, world: &mut World) -> bool;
     fn as_any(&self) -> &dyn Any;
     fn action_type(&self) -> ActionType;

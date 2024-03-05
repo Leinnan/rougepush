@@ -19,6 +19,8 @@ mod board;
 mod consts;
 mod debug;
 mod gui;
+mod input;
+mod lights;
 mod states;
 mod vectors;
 
@@ -46,6 +48,8 @@ fn main() {
             ThirdPersonCameraPlugin,
             debug::DebugPlugin,
             board::BoardPlugin,
+            input::InputPlugin,
+            lights::LightsPlugin,
             states::GameStatesPlugin,
             gui::GameGuiPlugin,
         ))

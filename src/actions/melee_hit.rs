@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, ops::Deref};
 
 use super::{damage::DamageAction, Action};
-use crate::{board::components::*, states::*, vectors::Vector2Int};
+use crate::{board::components::*, input::InputAction, states::*, vectors::Vector2Int};
 use bevy::prelude::*;
 
 pub struct MeleeHitAction {
@@ -9,7 +9,7 @@ pub struct MeleeHitAction {
     pub attacker_type: Piece,
     pub target: Vector2Int,
     pub damage: u32,
-    pub key: Option<KeyCode>,
+    pub key: Option<InputAction>,
 }
 impl Action for MeleeHitAction {
     fn execute(&self, world: &mut World) -> bool {
@@ -41,7 +41,7 @@ impl Action for MeleeHitAction {
         self
     }
 
-    fn get_key_code(&self) -> Option<KeyCode> {
+    fn get_input(&self) -> Option<InputAction> {
         self.key
     }
     fn action_type(&self) -> super::ActionType {

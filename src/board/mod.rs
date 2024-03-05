@@ -1,4 +1,5 @@
 use crate::{
+    lights::Torch,
     states::{self, ActionDelay},
     vectors::Vector2Int,
     ImageAssets,
@@ -6,7 +7,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use components::*;
-use rand::prelude::SliceRandom; // optional if you want movement controls
+use rand::{prelude::SliceRandom, Rng}; // optional if you want movement controls
 
 pub mod components;
 pub mod generator;
@@ -30,7 +31,6 @@ impl Plugin for BoardPlugin {
                     generate_world,
                     renderer::spawn_piece_renderer,
                     renderer::update_piece,
-                    renderer::spawn_torches,
                 )
                     .run_if(in_state(states::MainGameState::Game)),
             );
@@ -137,6 +137,7 @@ fn generate_world(
                 .bundle_with_atlas(&mut sprite_params, atlas),
             )
             .insert(Name::new(format!("Tile{}x{}", x, y)));
+        let mut rng = rand::thread_rng();
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
             for i in [0, 1] {
@@ -154,10 +155,20 @@ fn generate_world(
                     )
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)));
                 if (pos.x + pos.y) % 10 == 0 {
+                    let interval_counter = rng.gen_range(15..20);
+                    let cur_index = rng.gen_range(0..15);
+                    let max_intensity = rng.gen_range(38_000.0..51_000.0);
+                    let min_intensity = max_intensity - 11_000.0;
                     commands.spawn((
                         Transform::from_xyz(x + el.2, 1.499, y + el.3).with_rotation(el.1),
                         Name::new("TORCH"),
-                        Torch,
+                        Torch {
+                            cur_index,
+                            interval_counter,
+                            pattern: "mmmmmaaaaammmmmaaaaaabcdefgabcdefg".chars().collect(),
+                            max_intensity,
+                            min_intensity,
+                        },
                     ));
                 }
             }

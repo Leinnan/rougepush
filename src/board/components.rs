@@ -50,6 +50,3 @@ pub struct PlayerControl;
 
 #[derive(Component, Reflect)]
 pub struct AiControl;
-
-#[derive(Component, Reflect)]
-pub struct Torch;

@@ -4,12 +4,14 @@ use bevy::{
     utils::{HashMap, HashSet},
 };
 use bevy_button_released_plugin::*;
+use leafwing_input_manager::action_state::ActionState;
 use std::collections::{BinaryHeap, VecDeque};
 use std::ops::DerefMut;
 
 use crate::{
     actions::{melee_hit::MeleeHitAction, walk::WalkAction, Action, ActionType, RegisterActions},
     board::components::*,
+    input::InputAction,
     vectors::{Vector2Int, ORTHO_DIRECTIONS},
 };
 
@@ -132,10 +134,10 @@ fn prepare_action_list(world: &mut World) {
 
     info!("Found piece!");
     let dirs = vec![
-        (KeyCode::KeyD, Vector2Int::new(-1, 0)),
-        (KeyCode::KeyA, Vector2Int::new(1, 0)),
-        (KeyCode::KeyW, Vector2Int::new(0, 1)),
-        (KeyCode::KeyS, Vector2Int::new(0, -1)),
+        (InputAction::Right, Vector2Int::new(-1, 0)),
+        (InputAction::Left, Vector2Int::new(1, 0)),
+        (InputAction::Up, Vector2Int::new(0, 1)),
+        (InputAction::Down, Vector2Int::new(0, -1)),
     ];
     let mut possible_actions: Vec<Box<dyn Action>> = Vec::new();
 
@@ -185,18 +187,17 @@ fn remove_moves(
 }
 
 fn select_action(
-    keys: ResMut<ButtonInput<KeyCode>>,
-    mut q: Query<(&mut PossibleActions, &PlayerControl), With<CurrentActorToken>>,
+    mut q: Query<(&mut PossibleActions, &ActionState<InputAction>), With<CurrentActorToken>>,
     mut next_state: ResMut<NextState<GameTurnSteps>>,
     mut action_queue: ResMut<PendingActions>,
 ) {
-    let Ok((mut actions, _)) = q.get_single_mut() else {
+    let Ok((mut actions, action_state)) = q.get_single_mut() else {
         return;
     };
     let mut action_index = None;
     for (index, action) in actions.0.iter().enumerate() {
-        if let Some(key) = action.get_key_code() {
-            if keys.just_released(key) {
+        if let Some(key) = action.get_input() {
+            if action_state.just_released(&key) {
                 action_index = Some(index);
             }
         }
