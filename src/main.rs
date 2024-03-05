@@ -39,8 +39,8 @@ struct FaceCamera;
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
-    App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins((
             Sprite3dPlugin,
             ThirdPersonCameraPlugin,
@@ -49,7 +49,7 @@ fn main() {
             states::GameStatesPlugin,
             gui::GameGuiPlugin,
         ))
-        .add_systems(Startup, (setup, set_window_icon))
+        .add_systems(Startup, setup)
         .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
         .add_systems(Update, face_camera)
@@ -57,8 +57,11 @@ fn main() {
             LoadingState::new(states::MainGameState::AssetLoading)
                 .continue_to_state(states::MainGameState::Menu)
                 .load_collection::<ImageAssets>(),
-        )
-        .run();
+        );
+
+    #[cfg(not(target_arch = "wasm32"))]
+    app.add_systems(Startup, set_window_icon);
+    app.run();
 }
 
 fn face_camera(
@@ -101,6 +104,7 @@ fn setup(mut commands: Commands) {
     ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn set_window_icon(
     // we have to use `NonSend` here
     windows: NonSend<WinitWindows>,
