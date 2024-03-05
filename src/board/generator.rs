@@ -51,6 +51,9 @@ pub fn create_map(mut commands: Commands) {
             }
         }
     }
+    let new_board = CurrentBoard { tiles };
 
-    commands.insert_resource(CurrentBoard { tiles });
+    new_board.print();
+
+    commands.insert_resource(new_board);
 }

@@ -35,6 +35,26 @@ impl CurrentBoard {
     pub fn get(&self, x: i32, y: i32) -> Option<&TileType> {
         self.tiles.get(&Vector2Int { x, y })
     }
+
+    pub fn print(&self) {
+        let max_x = self.tiles.iter().map(|t|t.0.x).max().unwrap();
+        let max_y = self.tiles.iter().map(|t|t.0.y).max().unwrap();
+
+        let mut lines = Vec::new();
+        for _ in 0..(max_y+1) {
+            lines.push(vec!['*'; max_x as usize + 1]);
+        }
+        for (pos,tile_type) in self.tiles.iter() {
+            lines[pos.y as usize][pos.x as usize] = match tile_type {
+                TileType::None => '#',
+                TileType::BaseFloor => 'f',
+                TileType::Pit => 'p',
+            };
+        }
+        for line in lines {
+            info!("{}",line.iter().collect::<String>());
+        }
+    }
 }
 
 #[derive(Component, Reflect, InspectorOptions)]
