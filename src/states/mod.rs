@@ -271,10 +271,11 @@ fn execute_pending_action(world: &mut World) {
         return;
     };
     if !action.execute(world) {
-        error!("Error during action: {:?} -> {:?}",
-        action.action_type(),
-        action.target_pos()
-    );
+        error!(
+            "Error during action: {:?} -> {:?}",
+            action.action_type(),
+            action.target_pos()
+        );
     };
 }
 
