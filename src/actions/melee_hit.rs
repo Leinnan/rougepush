@@ -62,7 +62,7 @@ impl MeleeHitAction {
 
     pub fn trim_attacks_without_enemies(
         mut q: Query<(&PossibleActions, &mut ActionsToRemove)>,
-        other_pieces: Query<&PiecePos, With<Health>>,
+        other_pieces: Query<(&PiecePos,&Piece), With<Health>>,
     ) {
         let Ok((actions, mut to_remove)) = q.get_single_mut() else {
             return;
@@ -74,7 +74,7 @@ impl MeleeHitAction {
                 continue;
             };
             let mut is_valid_move = false;
-            if other_pieces.iter().any(|p| **p == action.target) {
+            if other_pieces.iter().any(|(p, piece)| **p == action.target && action.attacker_type != *piece) {
                 is_valid_move = true;
             }
             if !is_valid_move {
