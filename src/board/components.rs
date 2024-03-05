@@ -17,7 +17,6 @@ pub enum Piece {
     Enemy,
 }
 
-
 #[derive(Component)]
 pub struct GameObject;
 
@@ -62,6 +61,8 @@ pub struct Flying;
 
 impl Default for AiControl {
     fn default() -> Self {
-        Self { max_distance_to_player: 5 }
+        Self {
+            max_distance_to_player: 5,
+        }
     }
 }

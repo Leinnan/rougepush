@@ -24,7 +24,13 @@ impl Plugin for GameGuiPlugin {
                 OnEnter(GameTurnSteps::ActionSelection),
                 update_info.after(PreparingActions::TrimWrongMoves),
             )
-            .add_systems(Update, (death_screen::handle_death_menu_buttons, death_screen::create_death_screen));
+            .add_systems(
+                Update,
+                (
+                    death_screen::handle_death_menu_buttons,
+                    death_screen::create_death_screen,
+                ),
+            );
     }
 }
 
@@ -47,7 +53,8 @@ fn add_actor_info(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             }),
         )
-        .insert(CurrentActorInfo);
+        .insert(CurrentActorInfo)
+        .insert(GameObject);
 }
 
 fn update_info(

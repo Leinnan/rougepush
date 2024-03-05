@@ -2,7 +2,7 @@ use crate::{FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 
-use super::{Piece, PiecePos};
+use super::{GameObject, Piece, PiecePos};
 
 pub fn spawn_piece_renderer(
     mut commands: Commands,
@@ -27,6 +27,7 @@ pub fn spawn_piece_renderer(
             .bundle_with_atlas(&mut sprite_params, atlas),
             Name::new(format!("{:?}", &piece)),
             FaceCamera,
+            GameObject
         ));
         if piece == &Piece::Player {
             entity_cmd.insert(bevy_third_person_camera::ThirdPersonCameraTarget);

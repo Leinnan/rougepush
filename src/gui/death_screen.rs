@@ -29,6 +29,8 @@ pub fn create_death_screen(
                     padding: UiRect::all(Val::Px(50.0)),
                     align_items: AlignItems::Center,
                     border: UiRect::all(Val::Px(3.0)),
+                    margin: UiRect::horizontal(Val::Auto),
+                    flex_direction: FlexDirection::Column,
                     ..default()
                 },
                 ..default()
@@ -68,7 +70,7 @@ pub fn create_death_screen(
                     background_color: BackgroundColor::from(Color::hex("4F6F52").unwrap()),
                     ..default()
                 },
-                Name::new(format!("button")),
+                Name::new("button".to_string()),
                 DeathScreenButton::GoToMenu,
                 GameButton::default(),
             ))
@@ -87,7 +89,7 @@ pub fn handle_death_menu_buttons(
     mut next_state: ResMut<NextState<MainGameState>>,
 ) {
     for event in reader.read() {
-        if let Ok(_) = interaction_query.get(**event) {
+        if interaction_query.get(**event).is_ok() {
             next_state.set(MainGameState::Menu);
         }
     }

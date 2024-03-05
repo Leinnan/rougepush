@@ -24,14 +24,13 @@ impl Plugin for BoardPlugin {
             .register_type::<PlayerControl>()
             .register_type::<AiControl>()
             .register_type::<Melee>()
-            .add_systems(OnEnter(states::MainGameState::Game), generator::create_map)
+            .add_systems(
+                OnEnter(states::MainGameState::Game),
+                (generator::create_map, generate_world).chain(),
+            )
             .add_systems(
                 Update,
-                (
-                    generate_world,
-                    renderer::spawn_piece_renderer,
-                    renderer::update_piece,
-                )
+                (renderer::spawn_piece_renderer, renderer::update_piece)
                     .run_if(in_state(states::MainGameState::Game)),
             );
     }
@@ -46,9 +45,6 @@ fn generate_world(
     let Some(board) = map else {
         return;
     };
-    if !board.is_added() {
-        return;
-    }
     let map = &board.tiles;
     // random floor tile
     let options_f = [685, 734, 774, 775, 830, 831];
@@ -112,8 +108,8 @@ fn generate_world(
                                 ..default()
                             }
                             .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
-                        ).insert(
-                            GameObject)
+                        )
+                        .insert(GameObject)
                         .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)));
                 }
             }
@@ -137,8 +133,8 @@ fn generate_world(
                 }
                 .bundle_with_atlas(&mut sprite_params, atlas),
             )
-            .insert(Name::new(format!("Tile{}x{}", x, y))).insert(
-                GameObject);
+            .insert(Name::new(format!("Tile{}x{}", x, y)))
+            .insert(GameObject);
         let mut rng = rand::thread_rng();
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
@@ -155,8 +151,8 @@ fn generate_world(
                         }
                         .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                     )
-                    .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i))).insert(
-                        GameObject);
+                    .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)))
+                    .insert(GameObject);
                 if (pos.x + pos.y) % 10 == 0 {
                     let interval_counter = rng.gen_range(15..20);
                     let cur_index = rng.gen_range(0..15);

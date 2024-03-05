@@ -116,7 +116,8 @@ impl Plugin for GameStatesPlugin {
                     despawn_recursive_by_component::<GameObject>,
                     despawn_recursive_by_component::<Piece>,
                     despawn_recursive_by_component::<Piece>,
-                ).chain(),
+                )
+                    .chain(),
             );
     }
 }
@@ -241,7 +242,6 @@ fn ai_select_action(
         return;
     };
     let Ok((player_position, _)) = player_query.get_single() else {
-        info!("THERE IS NO PLAYER LEFT");
         return;
     };
     let mut action_index = None;

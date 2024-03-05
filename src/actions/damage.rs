@@ -10,7 +10,10 @@ impl Action for DamageAction {
         };
         health.value = health.value.saturating_sub(self.1);
         if health.value == 0 {
-            world.entity_mut(self.0).remove::<Health>().remove::<Piece>();
+            world
+                .entity_mut(self.0)
+                .remove::<Health>()
+                .remove::<Piece>();
         }
         true
     }
