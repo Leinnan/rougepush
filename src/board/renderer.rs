@@ -27,7 +27,7 @@ pub fn spawn_piece_renderer(
             .bundle_with_atlas(&mut sprite_params, atlas),
             Name::new(format!("{:?}", &piece)),
             FaceCamera,
-            GameObject
+            GameObject,
         ));
         if piece == &Piece::Player {
             entity_cmd.insert(bevy_third_person_camera::ThirdPersonCameraTarget);

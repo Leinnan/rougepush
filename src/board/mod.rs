@@ -1,7 +1,6 @@
 use crate::{
     lights::Torch,
-    states::{self, ActionDelay},
-    vectors::Vector2Int,
+    states::{self},
     ImageAssets,
 };
 use bevy::prelude::*;
@@ -174,33 +173,4 @@ fn generate_world(
             }
         }
     }
-
-    commands.spawn((
-        Piece::Player,
-        Occupier,
-        PlayerControl,
-        ActionDelay(0),
-        Health { value: 2 },
-        Melee { damage: 2 },
-        PiecePos(Vector2Int::new(9, 1)),
-    ));
-
-    commands.spawn((
-        Piece::Enemy,
-        Occupier,
-        AiControl::default(),
-        ActionDelay(1),
-        Health { value: 1 },
-        Melee { damage: 5 },
-        PiecePos(Vector2Int::new(9, 5)),
-    ));
-    commands.spawn((
-        Piece::Enemy,
-        Occupier,
-        AiControl::default(),
-        ActionDelay(1),
-        Health { value: 1 },
-        Melee { damage: 5 },
-        PiecePos(Vector2Int::new(10, 6)),
-    ));
 }

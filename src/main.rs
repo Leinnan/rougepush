@@ -18,6 +18,7 @@ mod actions;
 mod board;
 mod consts;
 mod debug;
+mod dungeon;
 mod gui;
 mod input;
 mod lights;
