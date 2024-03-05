@@ -56,7 +56,7 @@ fn main() {
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(consts::BG_COLOR))
         .insert_resource(Msaa::Off)
-        .add_systems(Update, face_camera)
+        .add_systems(FixedUpdate, face_camera)
         .add_loading_state(
             LoadingState::new(states::MainGameState::AssetLoading)
                 .continue_to_state(states::MainGameState::Menu)
@@ -78,6 +78,15 @@ fn face_camera(
         delta.y = 0.0;
         delta += transform.translation;
         transform.look_at(delta, Vec3::Y);
+    }
+}
+
+pub fn despawn_recursive_by_component<T: bevy::prelude::Component>(
+    q: Query<Entity, With<T>>,
+    mut commands: Commands,
+) {
+    for e in q.iter() {
+        commands.entity(e).despawn_recursive();
     }
 }
 

@@ -17,6 +17,10 @@ pub enum Piece {
     Enemy,
 }
 
+
+#[derive(Component)]
+pub struct GameObject;
+
 #[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Deref, DerefMut)]
 pub struct PiecePos(pub Vector2Int);
 
@@ -49,4 +53,15 @@ pub struct Melee {
 pub struct PlayerControl;
 
 #[derive(Component, Reflect)]
-pub struct AiControl;
+pub struct AiControl {
+    pub max_distance_to_player: usize,
+}
+
+#[derive(Component, Reflect)]
+pub struct Flying;
+
+impl Default for AiControl {
+    fn default() -> Self {
+        Self { max_distance_to_player: 5 }
+    }
+}

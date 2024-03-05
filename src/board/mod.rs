@@ -112,7 +112,8 @@ fn generate_world(
                                 ..default()
                             }
                             .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
-                        )
+                        ).insert(
+                            GameObject)
                         .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)));
                 }
             }
@@ -136,7 +137,8 @@ fn generate_world(
                 }
                 .bundle_with_atlas(&mut sprite_params, atlas),
             )
-            .insert(Name::new(format!("Tile{}x{}", x, y)));
+            .insert(Name::new(format!("Tile{}x{}", x, y))).insert(
+                GameObject);
         let mut rng = rand::thread_rng();
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
@@ -153,7 +155,8 @@ fn generate_world(
                         }
                         .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                     )
-                    .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)));
+                    .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i))).insert(
+                        GameObject);
                 if (pos.x + pos.y) % 10 == 0 {
                     let interval_counter = rng.gen_range(15..20);
                     let cur_index = rng.gen_range(0..15);
@@ -162,6 +165,7 @@ fn generate_world(
                     commands.spawn((
                         Transform::from_xyz(x + el.2, 1.499, y + el.3).with_rotation(el.1),
                         Name::new("TORCH"),
+                        GameObject,
                         Torch {
                             cur_index,
                             interval_counter,
@@ -180,7 +184,7 @@ fn generate_world(
         Occupier,
         PlayerControl,
         ActionDelay(0),
-        Health { value: 3 },
+        Health { value: 2 },
         Melee { damage: 2 },
         PiecePos(Vector2Int::new(9, 1)),
     ));
@@ -188,19 +192,19 @@ fn generate_world(
     commands.spawn((
         Piece::Enemy,
         Occupier,
-        AiControl,
+        AiControl::default(),
         ActionDelay(1),
         Health { value: 1 },
-        Melee { damage: 1 },
+        Melee { damage: 5 },
         PiecePos(Vector2Int::new(9, 5)),
     ));
     commands.spawn((
         Piece::Enemy,
         Occupier,
-        AiControl,
+        AiControl::default(),
         ActionDelay(1),
         Health { value: 1 },
-        Melee { damage: 1 },
+        Melee { damage: 5 },
         PiecePos(Vector2Int::new(10, 6)),
     ));
 }

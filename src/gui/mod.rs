@@ -6,6 +6,10 @@ use crate::{
     states::*,
 };
 
+use self::death_screen::DeathScreenButton;
+
+mod death_screen;
+
 #[derive(Component, Reflect)]
 pub struct CurrentActorInfo;
 
@@ -14,11 +18,13 @@ pub struct GameGuiPlugin;
 impl Plugin for GameGuiPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<CurrentActorInfo>()
+            .register_type::<DeathScreenButton>()
             .add_systems(OnEnter(MainGameState::Game), add_actor_info)
             .add_systems(
                 OnEnter(GameTurnSteps::ActionSelection),
                 update_info.after(PreparingActions::TrimWrongMoves),
-            );
+            )
+            .add_systems(Update, (death_screen::handle_death_menu_buttons, death_screen::create_death_screen));
     }
 }
 

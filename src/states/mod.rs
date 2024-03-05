@@ -11,6 +11,7 @@ use std::ops::DerefMut;
 use crate::{
     actions::{melee_hit::MeleeHitAction, walk::WalkAction, Action, ActionType, RegisterActions},
     board::components::*,
+    despawn_recursive_by_component,
     input::InputAction,
     vectors::{Vector2Int, ORTHO_DIRECTIONS},
 };
@@ -56,6 +57,9 @@ pub struct PendingActions(pub VecDeque<Box<dyn Action>>);
 #[derive(Deref, DerefMut, Component, Default, Reflect)]
 pub struct ActionDelay(pub usize);
 
+#[derive(Event, Default, Reflect)]
+pub struct PlayerIsDeadEvent;
+
 pub struct GameStatesPlugin;
 
 impl Plugin for GameStatesPlugin {
@@ -64,6 +68,7 @@ impl Plugin for GameStatesPlugin {
             .init_state::<MainGameState>()
             .init_state::<GameTurnSteps>()
             .register_type::<CurrentActorToken>()
+            .add_event::<PlayerIsDeadEvent>()
             .register_type::<ActionDelay>()
             .register_all_actions()
             .init_resource::<PendingActions>()
@@ -100,7 +105,19 @@ impl Plugin for GameStatesPlugin {
                 Update,
                 execute_pending_action.run_if(in_state(GameTurnSteps::PerformAction)),
             )
-            .add_systems(OnExit(GameTurnSteps::PerformAction), remove_token);
+            .add_systems(
+                Update,
+                check_if_player_is_alive.run_if(in_state(MainGameState::Game)),
+            )
+            .add_systems(OnExit(GameTurnSteps::PerformAction), remove_token)
+            .add_systems(
+                OnExit(MainGameState::Game),
+                (
+                    despawn_recursive_by_component::<GameObject>,
+                    despawn_recursive_by_component::<Piece>,
+                    despawn_recursive_by_component::<Piece>,
+                ).chain(),
+            );
     }
 }
 
@@ -210,17 +227,21 @@ fn select_action(
 }
 
 fn ai_select_action(
-    mut q: Query<(&PiecePos, &mut PossibleActions, &AiControl), With<CurrentActorToken>>,
+    mut q: Query<
+        (&PiecePos, &mut PossibleActions, &AiControl, Option<&Flying>),
+        With<CurrentActorToken>,
+    >,
     mut next_state: ResMut<NextState<GameTurnSteps>>,
-    player_query: Query<&PiecePos, With<PlayerControl>>,
+    player_query: Query<(&PiecePos, &Piece), With<PlayerControl>>,
     mut action_queue: ResMut<PendingActions>,
     occupier_query: Query<&PiecePos, With<Occupier>>,
     board: Res<CurrentBoard>,
 ) {
-    let Ok((position, mut actions, _ai)) = q.get_single_mut() else {
+    let Ok((position, mut actions, ai, flying)) = q.get_single_mut() else {
         return;
     };
-    let Ok(player_position) = player_query.get_single() else {
+    let Ok((player_position, _)) = player_query.get_single() else {
+        info!("THERE IS NO PLAYER LEFT");
         return;
     };
     let mut action_index = None;
@@ -231,7 +252,8 @@ fn ai_select_action(
         player_position.0,
         &board.tiles.clone(),
         &occupier_query.iter().map(|p| p.0).collect(),
-        false,
+        flying.is_some(),
+        ai.max_distance_to_player,
     );
     info!("{:?}", path_to_player);
     for (index, action) in actions.0.iter().enumerate() {
@@ -255,8 +277,8 @@ fn ai_select_action(
             action_moved.target_pos()
         );
         action_queue.push_back(action_moved);
-        next_state.set(GameTurnSteps::PerformAction);
     }
+    next_state.set(GameTurnSteps::PerformAction);
 }
 
 fn execute_pending_action(world: &mut World) {
@@ -297,6 +319,7 @@ pub fn find_path(
     tiles: &HashMap<Vector2Int, TileType>,
     blockers: &HashSet<Vector2Int>,
     is_flying: bool,
+    max_distance: usize,
 ) -> Option<VecDeque<Vector2Int>> {
     let mut queue = BinaryHeap::new();
     queue.push(crate::vectors::utils::Node { v: start, cost: 0 });
@@ -341,9 +364,22 @@ pub fn find_path(
     while let Some(v) = came_from.get(&cur) {
         path.push_front(cur);
         cur = *v;
-        if cur == start {
+        if cur == start && path.len() <= max_distance {
             return Some(path);
         }
     }
     None
+}
+
+fn check_if_player_is_alive(
+    mut removed: RemovedComponents<Piece>,
+    player_query: Query<&PlayerControl>,
+    mut ev: EventWriter<PlayerIsDeadEvent>,
+) {
+    for e in removed.read() {
+        if player_query.get(e).is_ok() {
+            info!("PLAYER DEAD");
+            ev.send(PlayerIsDeadEvent);
+        }
+    }
 }

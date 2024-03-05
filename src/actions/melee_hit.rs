@@ -32,7 +32,6 @@ impl Action for MeleeHitAction {
             .map(|e| Box::new(DamageAction(e.0, self.damage)) as Box<dyn Action>)
             .collect::<VecDeque<_>>();
         if let Some(mut pending_actions) = world.get_resource_mut::<PendingActions>() {
-            info!("APPEND THE SHIT OUT OF IT");
             pending_actions.append(&mut result);
         }
         true
