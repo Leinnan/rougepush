@@ -7,9 +7,9 @@ use super::components::*;
 pub fn create_map(mut commands: Commands) {
     info!("Start world generate");
 
-    let mut dungeon = Dungeon::new(2);
+    let mut dungeon = Dungeon::new(3);
 
-    for idx in 0..4 {
+    for idx in 0..6 {
         let tun = match idx % 2 {
             0 => Box::new(LShapeTunneler) as Box<dyn Tunneler>,
             _ => Box::new(RandomTunneler) as Box<dyn Tunneler>,

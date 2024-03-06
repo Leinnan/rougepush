@@ -1,6 +1,7 @@
-use crate::{FaceCamera, ImageAssets};
+use crate::{consts, FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
+use rand::prelude::SliceRandom;
 
 use super::{GameObject, Piece, PiecePos};
 
@@ -38,5 +39,17 @@ pub fn spawn_piece_renderer(
 pub fn update_piece(mut query: Query<(&PiecePos, &mut Transform), Changed<PiecePos>>) {
     for (pos, mut transofrm) in query.iter_mut() {
         transofrm.translation = Vec3::new(pos.x as f32, 0.5, pos.y as f32);
+    }
+}
+
+pub fn dig_the_grave(
+    mut removed: RemovedComponents<Piece>,
+    mut query: Query<(&mut TextureAtlas, &mut Transform)>
+) {
+    for e in removed.read() {
+        let Ok((mut atlas,mut transform)) = query.get_mut(e) else {return;
+        };
+        atlas.index = *consts::GRAVES.choose(&mut rand::thread_rng()).unwrap();
+        transform.translation += Vec3::NEG_Y * 0.2;
     }
 }
