@@ -13,8 +13,8 @@ impl Action for DamageAction {
             world
                 .entity_mut(self.0)
                 .remove::<Health>()
-                .remove::<Piece>().
-                remove::<Occupier>();
+                .remove::<Piece>()
+                .remove::<Occupier>();
         }
         true
     }

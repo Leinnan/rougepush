@@ -18,6 +18,6 @@ pub const MY_ACCENT_COLOR: Color = Color::Rgba {
 pub const MY_ACCENT_COLOR32: Color32 = Color32::from_rgb(230, 102, 1);
 pub const BG_COLOR: Color = Color::rgb(0.09, 0.09, 0.13);
 
-pub const ENEMY_SKULL : usize = 622;
-pub const POTION : usize = 671;
+// pub const ENEMY_SKULL : usize = 622;
+// pub const POTION : usize = 671;
 pub const GRAVES : [usize;5] = [686,687,686,687,688];

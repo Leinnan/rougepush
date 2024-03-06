@@ -48,7 +48,7 @@ fn generate_world(
     // random floor tile
     let options_f = [685, 734, 774, 775, 830, 831];
     let f = || *options_f.choose(&mut rand::thread_rng()).unwrap();
-    let parent = commands.spawn((TransformBundle::default(),Name::new("map"))).insert(GameObject).id();
+    let parent = commands.spawn((TransformBundle::default(),Name::new("map"),InheritedVisibility::VISIBLE)).insert(GameObject).id();
     let wall_atlas = TextureAtlas {
         layout: assets.layout.clone(),
         index: 843,
