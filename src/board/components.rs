@@ -89,3 +89,11 @@ impl Default for AiControl {
         }
     }
 }
+
+#[derive(Component, Reflect)]
+pub struct Animation {
+    /// indices of all the frames in the animation
+    pub frames: Vec<usize>,
+    pub current: usize,
+    pub timer: Timer,
+}

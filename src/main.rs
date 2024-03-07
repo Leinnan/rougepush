@@ -33,6 +33,10 @@ struct ImageAssets {
     image_transparent: Handle<Image>,
     #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 49, rows = 22,))]
     layout: Handle<TextureAtlasLayout>,
+    #[asset(texture_atlas(tile_size_x = 58., tile_size_y = 72., columns = 3, rows = 2,))]
+    fire_layout: Handle<TextureAtlasLayout>,
+    #[asset(path = "fire.png")]
+    fire: Handle<Image>,
 }
 
 /// Tag entity to make it always face the camera
@@ -107,7 +111,10 @@ fn setup(mut commands: Commands) {
         },
         FogSettings {
             color: consts::BG_COLOR,
-            falloff: FogFalloff::Linear { start: 5.0, end: 11.5 },
+            falloff: FogFalloff::Linear {
+                start: 5.0,
+                end: 11.5,
+            },
             ..default()
         },
         Camera3dBundle {

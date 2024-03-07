@@ -1,8 +1,4 @@
-use crate::{
-    lights::Torch,
-    states::{self},
-    ImageAssets,
-};
+use crate::{lights::Torch, states, FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use components::*;
@@ -22,6 +18,7 @@ impl Plugin for BoardPlugin {
             .register_type::<Health>()
             .register_type::<PlayerControl>()
             .register_type::<AiControl>()
+            .register_type::<Animation>()
             .register_type::<Melee>()
             .add_systems(
                 OnEnter(states::MainGameState::Game),
@@ -30,6 +27,7 @@ impl Plugin for BoardPlugin {
             .add_systems(
                 Update,
                 (
+                    animate_sprites,
                     renderer::spawn_piece_renderer,
                     renderer::update_piece,
                     renderer::dig_the_grave,
@@ -165,10 +163,34 @@ fn generate_world(
                     let cur_index = rng.gen_range(0..15);
                     let max_intensity = rng.gen_range(38_000.0..51_000.0);
                     let min_intensity = max_intensity - 11_000.0;
+                    let flame_index = rng.gen_range(0..5);
+                    let atlas = TextureAtlas {
+                        layout: assets.fire_layout.clone(),
+                        index: flame_index,
+                    };
                     commands
                         .spawn((
-                            Transform::from_xyz(x + el.2, 1.499, y + el.3).with_rotation(el.1),
+                            Sprite3d {
+                                image: assets.fire.clone(),
+                                pixels_per_metre: 196.,
+                                double_sided: true,
+                                unlit: true,
+                                transform: Transform::from_xyz(
+                                    x + (el.2 * 0.8),
+                                    1.499,
+                                    y + (el.3 * 0.8),
+                                )
+                                .with_rotation(el.1),
+                                ..default()
+                            }
+                            .bundle_with_atlas(&mut sprite_params, atlas.clone()),
                             PiecePos(*pos),
+                            Animation {
+                                frames: vec![0, 1, 2, 3, 4, 5],
+                                current: flame_index,
+                                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+                            },
+                            FaceCamera,
                             Name::new("TORCH"),
                             Torch {
                                 cur_index,
@@ -181,6 +203,17 @@ fn generate_world(
                         .insert(crate::board::MapTile);
                 }
             }
+        }
+    }
+}
+
+fn animate_sprites(time: Res<Time>, mut query: Query<(&mut Animation, &mut TextureAtlas)>) {
+    for (mut animation, mut atlas) in query.iter_mut() {
+        animation.timer.tick(time.delta());
+        if animation.timer.just_finished() {
+            atlas.index = animation.frames[animation.current];
+            animation.current += 1;
+            animation.current %= animation.frames.len();
         }
     }
 }

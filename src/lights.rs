@@ -38,7 +38,7 @@ pub fn spawn_torches(q: Query<(Entity, &Transform, &Torch), Added<Torch>>, mut c
     for (e, t, torch) in q.iter() {
         commands.entity(e).insert(PointLightBundle {
             point_light: PointLight {
-                shadows_enabled: false,
+                shadows_enabled: true,
                 color: Color::rgb_u8(190, 150, 0),
                 range: 15.0,
                 intensity: torch.max_intensity,
