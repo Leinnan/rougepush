@@ -1,4 +1,4 @@
-use crate::{consts, lights::Torch, FaceCamera, ImageAssets};
+use crate::{consts, FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use rand::prelude::SliceRandom;
@@ -37,13 +37,31 @@ pub fn spawn_piece_renderer(
 }
 
 pub fn update_piece(
-    mut query: Query<(&PiecePos, &mut Transform, Option<&Torch>), Changed<PiecePos>>,
+    mut query: Query<
+        (&PiecePos, &mut Transform),
+        (Changed<PiecePos>, Without<crate::board::MapTile>),
+    >,
 ) {
-    for (pos, mut transofrm, torch) in query.iter_mut() {
-        if torch.is_some() {
-            continue;
-        }
-        transofrm.translation = Vec3::new(pos.x as f32, 0.5, pos.y as f32);
+    for (pos, mut transform) in query.iter_mut() {
+        transform.translation = Vec3::new(pos.x as f32, 0.5, pos.y as f32);
+    }
+}
+
+pub fn update_tile_visibility(
+    player_query: Query<(&PiecePos, &PlayerControl), Changed<PiecePos>>,
+    mut q: Query<(&mut Visibility, &PiecePos)>,
+) {
+    let Ok((player_pos, _)) = player_query.get_single() else {
+        return;
+    };
+    let max_distance = 8;
+
+    for (mut visibility, pos) in q.iter_mut() {
+        *visibility = if pos.manhattan(**player_pos) <= max_distance {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
     }
 }
 
@@ -57,19 +75,5 @@ pub fn dig_the_grave(
         };
         atlas.index = *consts::GRAVES.choose(&mut rand::thread_rng()).unwrap();
         transform.translation += Vec3::NEG_Y * 0.2;
-    }
-}
-
-pub fn set_closest_torches_to_have_shadows(
-    player_query: Query<(&PiecePos, &PlayerControl), Changed<PiecePos>>,
-    mut torches_q: Query<(&mut PointLight, &PiecePos)>,
-) {
-    let Ok((player_pos, _)) = player_query.get_single() else {
-        return;
-    };
-    let max_distance = 5;
-
-    for (mut light, pos) in torches_q.iter_mut() {
-        light.shadows_enabled = pos.manhattan(**player_pos) <= max_distance;
     }
 }

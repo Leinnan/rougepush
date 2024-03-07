@@ -33,7 +33,7 @@ impl Plugin for BoardPlugin {
                     renderer::spawn_piece_renderer,
                     renderer::update_piece,
                     renderer::dig_the_grave,
-                    renderer::set_closest_torches_to_have_shadows,
+                    renderer::update_tile_visibility,
                 )
                     .run_if(in_state(states::MainGameState::Game)),
             );
@@ -53,14 +53,7 @@ fn generate_world(
     // random floor tile
     let options_f = [685, 734, 774, 775, 830, 831];
     let f = || *options_f.choose(&mut rand::thread_rng()).unwrap();
-    let parent = commands
-        .spawn((
-            TransformBundle::default(),
-            Name::new("map"),
-            InheritedVisibility::VISIBLE,
-        ))
-        .insert(GameObject)
-        .id();
+
     let wall_atlas = TextureAtlas {
         layout: assets.layout.clone(),
         index: 843,
@@ -121,7 +114,8 @@ fn generate_world(
                             .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                         )
                         .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)))
-                        .set_parent(parent);
+                        .insert(crate::board::MapTile)
+                        .insert(PiecePos(*pos));
                 }
             }
             continue;
@@ -145,7 +139,8 @@ fn generate_world(
                 .bundle_with_atlas(&mut sprite_params, atlas),
             )
             .insert(Name::new(format!("Tile{}x{}", x, y)))
-            .set_parent(parent);
+            .insert(crate::board::MapTile)
+            .insert(PiecePos(*pos));
         let mut rng = rand::thread_rng();
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
@@ -163,7 +158,8 @@ fn generate_world(
                         .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                     )
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)))
-                    .set_parent(parent);
+                    .insert(crate::board::MapTile)
+                    .insert(PiecePos(*pos));
                 if (pos.x + pos.y) % 10 == 0 {
                     let interval_counter = rng.gen_range(15..20);
                     let cur_index = rng.gen_range(0..15);
@@ -182,7 +178,7 @@ fn generate_world(
                                 min_intensity,
                             },
                         ))
-                        .set_parent(parent);
+                        .insert(crate::board::MapTile);
                 }
             }
         }

@@ -107,7 +107,7 @@ fn setup(mut commands: Commands) {
         },
         FogSettings {
             color: consts::BG_COLOR,
-            falloff: FogFalloff::ExponentialSquared { density: 0.11 },
+            falloff: FogFalloff::Linear { start: 5.0, end: 11.5 },
             ..default()
         },
         Camera3dBundle {

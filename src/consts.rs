@@ -16,7 +16,7 @@ pub const MY_ACCENT_COLOR: Color = Color::Rgba {
     alpha: 1.0,
 };
 pub const MY_ACCENT_COLOR32: Color32 = Color32::from_rgb(230, 102, 1);
-pub const BG_COLOR: Color = Color::rgb(0.09, 0.09, 0.13);
+pub const BG_COLOR: Color = Color::rgb(0.08, 0.08, 0.115);
 
 // pub const ENEMY_SKULL : usize = 622;
 // pub const POTION : usize = 671;
