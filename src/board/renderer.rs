@@ -77,3 +77,24 @@ pub fn dig_the_grave(
         transform.translation += Vec3::NEG_Y * 0.2;
     }
 }
+
+pub fn set_materials_colors(mut materials: ResMut<Assets<StandardMaterial>>) {
+    if !materials.is_changed() {
+        return;
+    }
+    for (_, material) in materials.iter_mut() {
+        let Some(image) = &material.base_color_texture else {
+            continue;
+        };
+
+        let Some(imgpath) = image.path() else {
+            continue;
+        };
+        let imgpath = imgpath.to_string();
+        if imgpath.eq("colored_packed.png") {
+            material.base_color = Color::rgb_u8(148, 163, 198);
+        } else if imgpath.eq("colored-transparent_packed.png") {
+            material.base_color = Color::rgb_u8(214, 179, 109);
+        }
+    }
+}

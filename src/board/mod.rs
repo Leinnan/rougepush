@@ -27,6 +27,7 @@ impl Plugin for BoardPlugin {
             .add_systems(
                 Update,
                 (
+                    renderer::set_materials_colors,
                     animate_sprites,
                     renderer::spawn_piece_renderer,
                     renderer::update_piece,
