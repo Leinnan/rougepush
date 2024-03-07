@@ -215,7 +215,7 @@ fn select_action(
     let mut action_index = None;
     for (index, action) in actions.0.iter().enumerate() {
         if let Some(key) = action.get_input() {
-            if action_state.pressed(&key) {
+            if action_state.just_released(&key) {
                 action_index = Some(index);
             }
         }

@@ -1,5 +1,7 @@
 use crate::consts::*;
+use crate::states::MainGameState;
 use bevy::app::{App, Plugin};
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::input::common_conditions::input_toggle_active;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
@@ -9,6 +11,9 @@ use bevy_inspector_egui::{
 
 #[derive(Resource, Reflect)]
 pub struct RunArgs(pub Vec<String>);
+
+#[derive(Component)]
+pub struct GitVersionInfo;
 
 pub struct DebugPlugin;
 
@@ -23,28 +28,39 @@ impl Plugin for DebugPlugin {
                 Update,
                 inspector_ui.run_if(input_toggle_active(false, KeyCode::F1)),
             )
-            .add_plugins((EguiPlugin, DefaultInspectorConfigPlugin));
+            .add_systems(
+                OnExit(MainGameState::Menu),
+                crate::despawn_recursive_by_component::<GitVersionInfo>,
+            )
+            .add_plugins((
+                EguiPlugin,
+                DefaultInspectorConfigPlugin,
+                FrameTimeDiagnosticsPlugin,
+                LogDiagnosticsPlugin::default(),
+            ));
     }
 }
 
 fn git_info(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(
-        TextBundle::from_section(
-            format!("{} ( {} )", GIT_DATE, &GIT_HASH[..7]),
-            TextStyle {
-                font: asset_server.load(BASE_FONT),
-                font_size: 11.0,
-                color: MY_ACCENT_COLOR,
-            },
+    commands
+        .spawn(
+            TextBundle::from_section(
+                format!("{} ( {} )", GIT_DATE, &GIT_HASH[..7]),
+                TextStyle {
+                    font: asset_server.load(BASE_FONT),
+                    font_size: 11.0,
+                    color: MY_ACCENT_COLOR,
+                },
+            )
+            .with_text_justify(JustifyText::Right)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(5.0),
+                right: Val::Px(5.0),
+                ..default()
+            }),
         )
-        .with_text_justify(JustifyText::Right)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            bottom: Val::Px(5.0),
-            right: Val::Px(5.0),
-            ..default()
-        }),
-    );
+        .insert(GitVersionInfo);
 }
 
 fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities>) {
