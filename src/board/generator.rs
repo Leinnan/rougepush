@@ -1,8 +1,8 @@
+use super::components::*;
 use super::components::{CurrentBoard, TileType};
 use crate::{dungeon::*, states::ActionDelay, vectors::Vector2Int};
 use bevy::{prelude::*, utils::hashbrown::HashMap};
 use rand::prelude::SliceRandom;
-use super::components::*;
 
 pub fn create_map(mut commands: Commands) {
     info!("Start world generate");
@@ -26,7 +26,13 @@ pub fn create_map(mut commands: Commands) {
 
     new_board.print();
     let area = || dungeon.areas.choose(&mut rand::thread_rng()).unwrap();
-    let random_point = ||area().rooms.choose(&mut rand::thread_rng()).unwrap().random_point();
+    let random_point = || {
+        area()
+            .rooms
+            .choose(&mut rand::thread_rng())
+            .unwrap()
+            .random_point()
+    };
     commands.spawn((
         Piece::Player,
         Occupier,

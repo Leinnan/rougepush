@@ -1,9 +1,9 @@
-use crate::{consts, FaceCamera, ImageAssets};
+use crate::{consts, lights::Torch, FaceCamera, ImageAssets};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use rand::prelude::SliceRandom;
 
-use super::{GameObject, Piece, PiecePos};
+use super::{GameObject, Piece, PiecePos, PlayerControl};
 
 pub fn spawn_piece_renderer(
     mut commands: Commands,
@@ -36,20 +36,40 @@ pub fn spawn_piece_renderer(
     }
 }
 
-pub fn update_piece(mut query: Query<(&PiecePos, &mut Transform), Changed<PiecePos>>) {
-    for (pos, mut transofrm) in query.iter_mut() {
+pub fn update_piece(
+    mut query: Query<(&PiecePos, &mut Transform, Option<&Torch>), Changed<PiecePos>>,
+) {
+    for (pos, mut transofrm, torch) in query.iter_mut() {
+        if torch.is_some() {
+            continue;
+        }
         transofrm.translation = Vec3::new(pos.x as f32, 0.5, pos.y as f32);
     }
 }
 
 pub fn dig_the_grave(
     mut removed: RemovedComponents<Piece>,
-    mut query: Query<(&mut TextureAtlas, &mut Transform)>
+    mut query: Query<(&mut TextureAtlas, &mut Transform)>,
 ) {
     for e in removed.read() {
-        let Ok((mut atlas,mut transform)) = query.get_mut(e) else {return;
+        let Ok((mut atlas, mut transform)) = query.get_mut(e) else {
+            return;
         };
         atlas.index = *consts::GRAVES.choose(&mut rand::thread_rng()).unwrap();
         transform.translation += Vec3::NEG_Y * 0.2;
+    }
+}
+
+pub fn set_closest_torches_to_have_shadows(
+    player_query: Query<(&PiecePos, &PlayerControl), Changed<PiecePos>>,
+    mut torches_q: Query<(&mut PointLight, &PiecePos)>,
+) {
+    let Ok((player_pos, _)) = player_query.get_single() else {
+        return;
+    };
+    let max_distance = 5;
+
+    for (mut light, pos) in torches_q.iter_mut() {
+        light.shadows_enabled = pos.manhattan(**player_pos) <= max_distance;
     }
 }

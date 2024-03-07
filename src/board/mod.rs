@@ -29,7 +29,12 @@ impl Plugin for BoardPlugin {
             )
             .add_systems(
                 Update,
-                (renderer::spawn_piece_renderer, renderer::update_piece, renderer::dig_the_grave)
+                (
+                    renderer::spawn_piece_renderer,
+                    renderer::update_piece,
+                    renderer::dig_the_grave,
+                    renderer::set_closest_torches_to_have_shadows,
+                )
                     .run_if(in_state(states::MainGameState::Game)),
             );
     }
@@ -48,7 +53,14 @@ fn generate_world(
     // random floor tile
     let options_f = [685, 734, 774, 775, 830, 831];
     let f = || *options_f.choose(&mut rand::thread_rng()).unwrap();
-    let parent = commands.spawn((TransformBundle::default(),Name::new("map"),InheritedVisibility::VISIBLE)).insert(GameObject).id();
+    let parent = commands
+        .spawn((
+            TransformBundle::default(),
+            Name::new("map"),
+            InheritedVisibility::VISIBLE,
+        ))
+        .insert(GameObject)
+        .id();
     let wall_atlas = TextureAtlas {
         layout: assets.layout.clone(),
         index: 843,
@@ -108,7 +120,8 @@ fn generate_world(
                             }
                             .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                         )
-                        .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i))).set_parent(parent);
+                        .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)))
+                        .set_parent(parent);
                 }
             }
             continue;
@@ -131,7 +144,8 @@ fn generate_world(
                 }
                 .bundle_with_atlas(&mut sprite_params, atlas),
             )
-            .insert(Name::new(format!("Tile{}x{}", x, y))).set_parent(parent);
+            .insert(Name::new(format!("Tile{}x{}", x, y)))
+            .set_parent(parent);
         let mut rng = rand::thread_rng();
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
@@ -148,23 +162,27 @@ fn generate_world(
                         }
                         .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
                     )
-                    .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i))).set_parent(parent);
+                    .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)))
+                    .set_parent(parent);
                 if (pos.x + pos.y) % 10 == 0 {
                     let interval_counter = rng.gen_range(15..20);
                     let cur_index = rng.gen_range(0..15);
                     let max_intensity = rng.gen_range(38_000.0..51_000.0);
                     let min_intensity = max_intensity - 11_000.0;
-                    commands.spawn((
-                        Transform::from_xyz(x + el.2, 1.499, y + el.3).with_rotation(el.1),
-                        Name::new("TORCH"),
-                        Torch {
-                            cur_index,
-                            interval_counter,
-                            pattern: "mmmmmaaaaammmmmaaaaaabcdefgabcdefg".chars().collect(),
-                            max_intensity,
-                            min_intensity,
-                        },
-                    )).set_parent(parent);
+                    commands
+                        .spawn((
+                            Transform::from_xyz(x + el.2, 1.499, y + el.3).with_rotation(el.1),
+                            PiecePos(*pos),
+                            Name::new("TORCH"),
+                            Torch {
+                                cur_index,
+                                interval_counter,
+                                pattern: "mmmmmaaaaammmmmaaaaaabcdefgabcdefg".chars().collect(),
+                                max_intensity,
+                                min_intensity,
+                            },
+                        ))
+                        .set_parent(parent);
                 }
             }
         }
