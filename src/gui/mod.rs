@@ -24,6 +24,9 @@ pub struct ActionInfo {
     pub description: String,
 }
 
+#[derive(Component, Reflect)]
+pub struct Compass(pub Entity);
+
 pub struct GameGuiPlugin;
 
 impl Plugin for GameGuiPlugin {
@@ -46,6 +49,8 @@ impl Plugin for GameGuiPlugin {
                     death_screen::handle_death_menu_buttons,
                     death_screen::create_death_screen,
                     spawn_action_info,
+                    insert_compass,
+                    update_compass_pos,
                 ),
             );
     }
@@ -145,5 +150,53 @@ fn spawn_action_info(
                 },
             ));
         });
+    }
+}
+
+fn insert_compass(
+    mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut commands: Commands,
+    q: Query<(Entity, &PiecePos), Added<PlayerControl>>,
+) {
+    for (e, pos) in q.iter() {
+        commands
+            .spawn(PbrBundle {
+                mesh: meshes.add(Plane3d::default().mesh().size(1.0, 1.0)),
+                material: materials.add(StandardMaterial {
+                    base_color_texture: Some(asset_server.load("ui/windrose.png")),
+                    alpha_mode: AlphaMode::Mask(0.5),
+                    unlit: true,
+                    ..default()
+                }),
+                transform: Transform::from_xyz(pos.x as f32, 0.1, pos.y as f32),
+                ..default()
+            })
+            .insert(Compass(e));
+    }
+}
+
+pub fn update_compass_pos(
+    q: Query<&PiecePos, Changed<PiecePos>>,
+    mut compass_q: Query<(&mut Transform, &mut Visibility, &Compass)>,
+    q_p: Query<&PlayerControl,With<CurrentActorToken>>,
+    state: Res<State<GameTurnSteps>>,
+) {
+    for (mut t, _, compass) in compass_q.iter_mut() {
+        let Ok(pos) = q.get(compass.0) else {
+            continue;
+        };
+        *t = Transform::from_xyz(pos.x as f32, 0.1, pos.y as f32);
+    }
+    if state.is_changed() {
+        let visible = !q_p.is_empty() && *state == GameTurnSteps::ActionSelection;
+        for (_, mut vis, _) in compass_q.iter_mut() {   
+            *vis = if visible {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
+            };
+        }
     }
 }

@@ -129,7 +129,7 @@ fn find_actor(query: Query<(Entity, &Piece)>, mut next_state: ResMut<NextState<G
 }
 
 fn set_current_actor(mut commands: Commands, query: Query<(Entity, &ActionDelay), With<Piece>>) {
-    info!("set_current_actor");
+    // info!("set_current_actor");
     let mut lowest_delay = (usize::MAX, Entity::PLACEHOLDER);
     for (entity, delay) in query.iter() {
         if **delay < lowest_delay.0 {
@@ -143,14 +143,14 @@ fn set_current_actor(mut commands: Commands, query: Query<(Entity, &ActionDelay)
 }
 
 fn prepare_action_list(world: &mut World) {
-    info!("prepare_action_list");
+    // info!("prepare_action_list");
     let mut query = world
         .query_filtered::<(Entity, &Piece, &PiecePos, Option<&Melee>), With<CurrentActorToken>>();
     let Ok((entity, piece, pos, melee)) = query.get_single(world) else {
         return;
     };
 
-    info!("Found piece!");
+    // info!("Found piece!");
     let dirs = vec![
         (InputAction::Right, Vector2Int::new(-1, 0)),
         (InputAction::Left, Vector2Int::new(1, 0)),
@@ -197,11 +197,11 @@ fn remove_moves(
         actions.remove(*index);
     }
     commands.entity(entity).remove::<ActionsToRemove>();
-    info!(
-        "Removed {} actions, {} actions remain",
-        remove_list.len(),
-        actions.len()
-    );
+    // info!(
+    //     "Removed {} actions, {} actions remain",
+    //     remove_list.len(),
+    //     actions.len()
+    // );
 }
 
 fn select_action(
@@ -271,11 +271,11 @@ fn ai_select_action(
     }
     if action_index.is_some() {
         let action_moved = actions.0.remove(action_index.unwrap());
-        info!(
-            "ACTION SELECTED: {:?} -> {:?}",
-            action_moved.action_type(),
-            action_moved.target_pos()
-        );
+        // info!(
+        //     "ACTION SELECTED: {:?} -> {:?}",
+        //     action_moved.action_type(),
+        //     action_moved.target_pos()
+        // );
         action_queue.push_back(action_moved);
     }
     next_state.set(GameTurnSteps::PerformAction);
