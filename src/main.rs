@@ -11,12 +11,10 @@ use bevy_sprite3d::Sprite3dPlugin;
 use bevy_third_person_camera::camera::*;
 use bevy_third_person_camera::*;
 
-use bevy::winit::WinitWindows;
-use winit::window::Icon;
-
 mod actions;
 mod board;
 mod consts;
+#[cfg(not(target_arch = "wasm32"))]
 mod debug;
 mod dungeon;
 mod gui;
@@ -51,6 +49,7 @@ fn main() {
         .add_plugins((
             Sprite3dPlugin,
             ThirdPersonCameraPlugin,
+            #[cfg(not(target_arch = "wasm32"))]
             debug::DebugPlugin,
             board::BoardPlugin,
             input::InputPlugin,
@@ -128,7 +127,7 @@ fn setup(mut commands: Commands) {
 #[cfg(not(target_arch = "wasm32"))]
 fn set_window_icon(
     // we have to use `NonSend` here
-    windows: NonSend<WinitWindows>,
+    windows: NonSend<bevy::winit::WinitWindows>,
 ) {
     // here we use the `image` crate to load our icon data from a png file
     // this is not a very bevy-native solution, but it will do
@@ -140,7 +139,7 @@ fn set_window_icon(
         let rgba = image.into_raw();
         (rgba, width, height)
     };
-    let icon = Icon::from_rgba(icon_rgba, icon_width, icon_height).unwrap();
+    let icon = winit::window::Icon::from_rgba(icon_rgba, icon_width, icon_height).unwrap();
 
     // do it for all windows
     for window in windows.windows.values() {

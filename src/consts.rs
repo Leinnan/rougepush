@@ -1,7 +1,10 @@
 use bevy::prelude::Color;
+#[cfg(not(target_arch = "wasm32"))]
 use bevy_egui::egui::Color32;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub const GIT_HASH: &str = env!("GIT_HASH");
+#[cfg(not(target_arch = "wasm32"))]
 pub const GIT_DATE: &str = env!("GIT_DATE");
 
 // pub const WINDOW_WIDTH: f32 = 960.;
@@ -15,6 +18,7 @@ pub const MY_ACCENT_COLOR: Color = Color::Rgba {
     blue: 0.01,
     alpha: 1.0,
 };
+#[cfg(not(target_arch = "wasm32"))]
 pub const MY_ACCENT_COLOR32: Color32 = Color32::from_rgb(230, 102, 1);
 pub const BG_COLOR: Color = Color::rgb(0.08, 0.08, 0.115);
 
