@@ -64,6 +64,7 @@ fn add_actor_info(mut commands: Commands, asset_server: Res<AssetServer>) {
                 flex_direction: FlexDirection::Column,
                 top: Val::Px(5.0),
                 left: Val::Px(5.0),
+                padding: UiRect::all(Val::Px(10.0)),
                 ..default()
             },
             ..default()
@@ -138,15 +139,15 @@ fn spawn_action_info(
             };
             r.spawn(ImageBundle {
                 image: UiImage::new(asset_server.load(img)),
-                background_color: MY_ACCENT_COLOR.into(),
+                background_color: MY_ACCENT_COLOR.with_a(0.6).into(),
                 ..default()
             });
             r.spawn(TextBundle::from_section(
                 info.description.clone(),
                 TextStyle {
                     font: asset_server.load(BASE_FONT),
-                    font_size: 15.0,
-                    color: MY_ACCENT_COLOR,
+                    font_size: 12.0,
+                    color: MY_ACCENT_COLOR.with_a(0.6),
                 },
             ));
         });
@@ -167,6 +168,8 @@ fn insert_compass(
                 material: materials.add(StandardMaterial {
                     base_color_texture: Some(asset_server.load("ui/windrose.png")),
                     alpha_mode: AlphaMode::Mask(0.5),
+                    // unlit: true,
+                    base_color: Color::WHITE.with_a(0.5),
                     unlit: true,
                     ..default()
                 }),
@@ -180,7 +183,7 @@ fn insert_compass(
 pub fn update_compass_pos(
     q: Query<&PiecePos, Changed<PiecePos>>,
     mut compass_q: Query<(&mut Transform, &mut Visibility, &Compass)>,
-    q_p: Query<&PlayerControl,With<CurrentActorToken>>,
+    q_p: Query<&PlayerControl, With<CurrentActorToken>>,
     state: Res<State<GameTurnSteps>>,
 ) {
     for (mut t, _, compass) in compass_q.iter_mut() {
@@ -191,7 +194,7 @@ pub fn update_compass_pos(
     }
     if state.is_changed() {
         let visible = !q_p.is_empty() && *state == GameTurnSteps::ActionSelection;
-        for (_, mut vis, _) in compass_q.iter_mut() {   
+        for (_, mut vis, _) in compass_q.iter_mut() {
             *vis = if visible {
                 Visibility::Inherited
             } else {
