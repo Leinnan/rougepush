@@ -159,50 +159,51 @@ fn generate_world(
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)))
                     .insert(crate::board::MapTile)
                     .insert(PiecePos(*pos));
-                if (pos.x + pos.y) % 10 == 0 {
-                    let interval_counter = rng.gen_range(15..20);
-                    let cur_index = rng.gen_range(0..15);
-                    let max_intensity = rng.gen_range(38_000.0..51_000.0);
-                    let min_intensity = max_intensity - 11_000.0;
-                    let flame_index = rng.gen_range(0..5);
-                    let atlas = TextureAtlas {
-                        layout: assets.fire_layout.clone(),
-                        index: flame_index,
-                    };
-                    commands
-                        .spawn((
-                            Sprite3d {
-                                image: assets.fire.clone(),
-                                pixels_per_metre: 196.,
-                                double_sided: true,
-                                unlit: true,
-                                transform: Transform::from_xyz(
-                                    x + (el.2 * 0.8),
-                                    1.499,
-                                    y + (el.3 * 0.8),
-                                )
-                                .with_rotation(el.1),
-                                ..default()
-                            }
-                            .bundle_with_atlas(&mut sprite_params, atlas.clone()),
-                            PiecePos(*pos),
-                            Animation {
-                                frames: vec![0, 1, 2, 3, 4, 5],
-                                current: flame_index,
-                                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
-                            },
-                            FaceCamera,
-                            Name::new("TORCH"),
-                            Torch {
-                                cur_index,
-                                interval_counter,
-                                pattern: "mmmmmaaaaammmmmaaaaaabcdefgabcdefg".chars().collect(),
-                                max_intensity,
-                                min_intensity,
-                            },
-                        ))
-                        .insert(crate::board::MapTile);
-                }
+            }
+
+            if (pos.x + pos.y) % 4 == 0 && rng.gen_bool(0.5) {
+                let interval_counter = rng.gen_range(15..20);
+                let cur_index = rng.gen_range(0..15);
+                let max_intensity = rng.gen_range(38_000.0..51_000.0);
+                let min_intensity = max_intensity - 11_000.0;
+                let flame_index = rng.gen_range(0..5);
+                let atlas = TextureAtlas {
+                    layout: assets.fire_layout.clone(),
+                    index: flame_index,
+                };
+                commands
+                    .spawn((
+                        Sprite3d {
+                            image: assets.fire.clone(),
+                            pixels_per_metre: 196.,
+                            double_sided: true,
+                            unlit: true,
+                            transform: Transform::from_xyz(
+                                x + (el.2 * 0.8),
+                                1.499,
+                                y + (el.3 * 0.8),
+                            )
+                            .with_rotation(el.1),
+                            ..default()
+                        }
+                        .bundle_with_atlas(&mut sprite_params, atlas.clone()),
+                        PiecePos(*pos),
+                        Animation {
+                            frames: vec![0, 1, 2, 3, 4, 5],
+                            current: flame_index,
+                            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+                        },
+                        FaceCamera,
+                        Name::new("TORCH"),
+                        Torch {
+                            cur_index,
+                            interval_counter,
+                            pattern: "mmmmmaaaaammmmmaaaaaabcdefgabcdefg".chars().collect(),
+                            max_intensity,
+                            min_intensity,
+                        },
+                    ))
+                    .insert(crate::board::MapTile);
             }
         }
     }
