@@ -10,6 +10,8 @@ pub enum InputAction {
     Right,
     Up,
     Down,
+    Space,
+    Hide,
 }
 
 pub struct InputPlugin;
@@ -31,6 +33,7 @@ fn add_input_bindings(query: Query<Entity, Added<PlayerControl>>, mut commands: 
         (InputAction::Up, KeyCode::ArrowUp),
         (InputAction::Down, KeyCode::KeyS),
         (InputAction::Down, KeyCode::ArrowDown),
+        (InputAction::Hide, KeyCode::KeyH),
     ]);
     for entity in query.iter() {
         commands

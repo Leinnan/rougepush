@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use leafwing_input_manager::action_state::ActionState;
 
 use crate::{
     board::components::*,
@@ -27,6 +28,9 @@ pub struct ActionInfo {
 #[derive(Component, Reflect)]
 pub struct Compass(pub Entity);
 
+#[derive(Resource, Reflect, Default)]
+pub struct HelpDisplayEnabled(pub bool);
+
 pub struct GameGuiPlugin;
 
 impl Plugin for GameGuiPlugin {
@@ -34,6 +38,7 @@ impl Plugin for GameGuiPlugin {
         app.register_type::<CurrentActorInfo>()
             .register_type::<DeathScreenButton>()
             .register_type::<ActionInfo>()
+            .insert_resource(HelpDisplayEnabled(true))
             .add_systems(OnEnter(MainGameState::Game), add_actor_info)
             .add_systems(
                 OnEnter(GameTurnSteps::ActionSelection),
@@ -50,9 +55,32 @@ impl Plugin for GameGuiPlugin {
                     death_screen::create_death_screen,
                     spawn_action_info,
                     insert_compass,
+                    switch_help_ui,
                     update_compass_pos,
                 ),
             );
+    }
+}
+
+fn switch_help_ui(
+    input: Query<&ActionState<InputAction>>,
+    mut help: ResMut<HelpDisplayEnabled>,
+    mut q: Query<&mut Visibility, With<ActionInfo>>,
+) {
+    let Ok(action_state) = input.get_single() else {
+        return;
+    };
+
+    if !action_state.just_pressed(&InputAction::Hide) {
+        return;
+    }
+    help.0 = !help.0;
+    for mut vis in q.iter_mut() {
+        *vis = if help.0 {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
     }
 }
 
@@ -60,11 +88,11 @@ fn add_actor_info(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             style: Style {
-                position_type: PositionType::Absolute,
+                width: Val::Px(300.0),
                 flex_direction: FlexDirection::Column,
-                top: Val::Px(5.0),
-                left: Val::Px(5.0),
                 padding: UiRect::all(Val::Px(10.0)),
+                align_self: AlignSelf::Stretch,
+                align_content: AlignContent::Stretch,
                 ..default()
             },
             ..default()
@@ -91,6 +119,7 @@ fn update_info(
     mut commands: Commands,
     mut q: Query<(&mut Text, &Parent), With<CurrentActorInfo>>,
     q2: Query<(&PossibleActions, Option<&PlayerControl>, &Piece), With<CurrentActorToken>>,
+    help: Res<HelpDisplayEnabled>,
 ) {
     let Ok((mut t, parent)) = q.get_single_mut() else {
         return;
@@ -98,30 +127,61 @@ fn update_info(
     let Ok((possible_actions, player_control, piece)) = q2.get_single() else {
         return;
     };
-
-    if player_control.is_some() {
-        commands.entity(**parent).with_children(|p| {
-            for a in possible_actions.0.iter() {
-                let Some(action) = a.get_input() else {
-                    continue;
-                };
-                p.spawn(ActionInfo {
-                    action,
-                    description: format!("{:?}", a.action_type()),
-                })
-                .insert(NodeBundle {
-                    style: Style {
-                        flex_direction: FlexDirection::Row,
-                        padding: UiRect::all(Val::Px(5.0)),
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    ..default()
-                });
-            }
-        });
-    }
     t.sections[0].value = format!("{:?} turn\n", piece);
+    if player_control.is_none() || !help.0 {
+        return;
+    }
+    commands.entity(**parent).with_children(|p| {
+        let action_info_node = NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Row,
+                padding: UiRect::all(Val::Px(5.0)),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            ..default()
+        };
+        for a in possible_actions.0.iter() {
+            let Some(action) = a.get_input() else {
+                continue;
+            };
+            p.spawn(ActionInfo {
+                action,
+                description: format!("{:?}", a.action_type()),
+            })
+            .insert(action_info_node.clone());
+        }
+        p.spawn(ActionInfo {
+            action: InputAction::Space,
+            description: "Switch camera movement".to_owned(),
+        })
+        .insert(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Row,
+                padding: UiRect::all(Val::Px(5.0)),
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(10.0),
+                ..default()
+            },
+            ..default()
+        });
+        p.spawn(ActionInfo {
+            action: InputAction::Hide,
+            description: "Hide this info".to_owned(),
+        })
+        .insert(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Row,
+                padding: UiRect::all(Val::Px(5.0)),
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(85.0),
+                ..default()
+            },
+            ..default()
+        });
+    });
 }
 
 fn spawn_action_info(
@@ -136,6 +196,8 @@ fn spawn_action_info(
                 InputAction::Right => "ui/keyboard_arrows_right_outline.png".to_owned(),
                 InputAction::Up => "ui/keyboard_arrows_up_outline.png".to_owned(),
                 InputAction::Down => "ui/keyboard_arrows_down_outline.png".to_owned(),
+                InputAction::Space => "ui/keyboard_space_outline.png".to_owned(),
+                InputAction::Hide => "ui/keyboard_h_outline.png".to_owned(),
             };
             r.spawn(ImageBundle {
                 image: UiImage::new(asset_server.load(img)),
@@ -147,7 +209,7 @@ fn spawn_action_info(
                 TextStyle {
                     font: asset_server.load(BASE_FONT),
                     font_size: 12.0,
-                    color: MY_ACCENT_COLOR.with_a(0.6),
+                    color: Color::rgb_u8(159, 111, 97),
                 },
             ));
         });

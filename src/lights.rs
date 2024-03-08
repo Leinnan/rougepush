@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::board::components::{PiecePos, PlayerControl};
+
 #[derive(Component, Reflect)]
 pub struct Torch {
     pub max_intensity: f32,
@@ -34,8 +36,15 @@ impl Plugin for LightsPlugin {
     }
 }
 
-pub fn spawn_torches(q: Query<(Entity, &Transform, &Torch), Added<Torch>>, mut commands: Commands) {
-    for (e, t, torch) in q.iter() {
+pub fn spawn_torches(
+    q: Query<(Entity, &Transform, &Torch, &PiecePos), Added<Torch>>,
+    mut commands: Commands,
+    q_p: Query<&PiecePos, With<PlayerControl>>,
+) {
+    let Ok(player_pos) = q_p.get_single() else {
+        return;
+    };
+    for (e, t, torch, torch_pos) in q.iter() {
         commands.entity(e).insert(PointLightBundle {
             point_light: PointLight {
                 shadows_enabled: true,
@@ -43,6 +52,11 @@ pub fn spawn_torches(q: Query<(Entity, &Transform, &Torch), Added<Torch>>, mut c
                 range: 15.0,
                 intensity: torch.max_intensity,
                 ..default()
+            },
+            visibility: if (*torch_pos).manhattan(**player_pos) < 8 {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
             },
             transform: *t,
             ..default()

@@ -134,18 +134,25 @@ fn setup_menu(
                 parent
                     .spawn((
                         ButtonBundle {
+                            image: asset_server.load("ui/panel-024.png").into(),
                             style: Style {
-                                width: Val::Px(200.0),
-                                height: Val::Px(50.0),
+                                width: Val::Px(250.0),
+                                height: Val::Px(80.0),
                                 margin,
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Center,
                                 ..default()
                             },
-
                             background_color: BackgroundColor::from(Color::hex("4F6F52").unwrap()),
                             ..default()
                         },
+                        ImageScaleMode::Sliced(TextureSlicer {
+                            // The image borders are 20 pixels in every direction
+                            border: BorderRect::square(22.0),
+                            center_scale_mode: SliceScaleMode::Stretch,
+                            sides_scale_mode: SliceScaleMode::Stretch,
+                            max_corner_scale: 1.0,
+                        }),
                         Name::new(format!("button:{}", text)),
                         label,
                         GameButton::default(),
