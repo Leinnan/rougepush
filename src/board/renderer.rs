@@ -91,10 +91,8 @@ pub fn set_materials_colors(mut materials: ResMut<Assets<StandardMaterial>>) {
             continue;
         };
         let imgpath = imgpath.to_string();
-        if imgpath.eq("colored_packed.png") {
-            material.base_color = Color::rgb_u8(148, 163, 198);
-        } else if imgpath.eq("colored-transparent_packed.png") {
-            material.base_color = Color::rgb_u8(214, 179, 109);
+        if imgpath.eq("colored-transparent_packed.png") {
+            material.base_color = Color::rgb_u8(224, 189, 129);
         }
     }
 }

@@ -56,7 +56,7 @@ fn cleanup_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
 fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
-            background_color: BackgroundColor::from(Color::hex("3A4D39").unwrap()),
+            background_color: BackgroundColor::from(Color::hex("472D3C").unwrap()),
             style: Style {
                 width: Val::Percent(100.),
                 height: Val::Percent(100.),
@@ -77,7 +77,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     TextStyle {
                         font: asset_server.load(consts::BASE_FONT),
                         font_size: 55.0,
-                        color: Color::hex("ECE3CE").unwrap(),
+                        color: Color::hex("CFC6B8").unwrap(),
                     },
                 )
                 .with_text_justify(JustifyText::Center)
@@ -94,7 +94,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             let btn_text_style = TextStyle {
                 font: asset_server.load(consts::BASE_FONT),
                 font_size: 25.0,
-                color: Color::hex("ECE3CE").unwrap(),
+                color: Color::hex("CFC6B8").unwrap(),
             };
 
             for (text, label, margin) in [
@@ -129,7 +129,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 justify_content: JustifyContent::Center,
                                 ..default()
                             },
-                            background_color: BackgroundColor::from(Color::hex("4F6F52").unwrap()),
+                            background_color: BackgroundColor::from(Color::hex("7A444A").unwrap()),
                             ..default()
                         },
                         ImageScaleMode::Sliced(TextureSlicer {

@@ -32,9 +32,9 @@ pub fn create_map(mut commands: Commands) {
                 continue;
             }
             let mut rng = rand::thread_rng();
-            let enemies_amount = rng.gen_range(1..=4);
+            let enemies_amount = rng.gen_range(1..=4) + 1;
             for _ in 0..enemies_amount {
-                for _ in 0..3 {
+                for _ in 0..5 {
                     let random_point = room.random_point_without_walls();
                     if !spawn_points.contains_key(&random_point) {
                         spawn_points.insert(random_point, Piece::Enemy);

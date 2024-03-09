@@ -18,7 +18,7 @@ pub const MY_ACCENT_COLOR: Color = Color::Rgba {
     blue: 0.01,
     alpha: 1.0,
 };
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(debug_assertions)]
 pub const MY_ACCENT_COLOR32: Color32 = Color32::from_rgb(230, 102, 1);
 pub const BG_COLOR: Color = Color::rgb(0.08, 0.08, 0.115);
 

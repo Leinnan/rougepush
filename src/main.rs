@@ -14,7 +14,7 @@ use bevy_third_person_camera::*;
 mod actions;
 mod board;
 mod consts;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(debug_assertions)]
 mod debug;
 mod dungeon;
 mod gui;
@@ -49,7 +49,7 @@ fn main() {
         .add_plugins((
             Sprite3dPlugin,
             ThirdPersonCameraPlugin,
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(debug_assertions)]
             debug::DebugPlugin,
             board::BoardPlugin,
             input::InputPlugin,
