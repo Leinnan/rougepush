@@ -29,7 +29,7 @@ pub enum MainGameState {
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone, States)]
 pub enum GameTurnSteps {
     #[default]
-    None,
+    SearchForAgents,
     ActionSelection,
     PerformAction,
 }
@@ -72,7 +72,10 @@ impl Plugin for GameStatesPlugin {
             .register_type::<ActionDelay>()
             .register_all_actions()
             .init_resource::<PendingActions>()
-            .add_systems(Update, find_actor.run_if(in_state(GameTurnSteps::None)))
+            .add_systems(
+                Update,
+                find_actor.run_if(in_state(GameTurnSteps::SearchForAgents)),
+            )
             .configure_sets(
                 OnEnter(GameTurnSteps::ActionSelection),
                 (
@@ -114,12 +117,18 @@ impl Plugin for GameStatesPlugin {
                 OnExit(MainGameState::Game),
                 (
                     despawn_recursive_by_component::<GameObject>,
+                    despawn_recursive_by_component::<MapTile>,
                     despawn_recursive_by_component::<Piece>,
-                    despawn_recursive_by_component::<Piece>,
+                    remove_map,
                 )
                     .chain(),
             );
     }
+}
+
+fn remove_map(mut commands: Commands, mut next: ResMut<NextState<GameTurnSteps>>) {
+    next.set(GameTurnSteps::SearchForAgents);
+    commands.remove_resource::<CurrentBoard>();
 }
 
 fn find_actor(query: Query<(Entity, &Piece)>, mut next_state: ResMut<NextState<GameTurnSteps>>) {
@@ -246,12 +255,15 @@ fn ai_select_action(
     player_query: Query<(&PiecePos, &Piece), With<PlayerControl>>,
     mut action_queue: ResMut<PendingActions>,
     occupier_query: Query<&PiecePos, With<Occupier>>,
-    board: Res<CurrentBoard>,
+    board: Option<Res<CurrentBoard>>,
 ) {
     let Ok((position, mut actions, ai, flying)) = q.get_single_mut() else {
         return;
     };
     let Ok((player_position, _)) = player_query.get_single() else {
+        return;
+    };
+    let Some(board) = board else {
         return;
     };
     let mut action_index = None;

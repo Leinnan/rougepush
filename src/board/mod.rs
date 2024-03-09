@@ -1,4 +1,8 @@
-use crate::{lights::Torch, states, FaceCamera, ImageAssets};
+use crate::{
+    lights::Torch,
+    states::{self, GameTurnSteps},
+    FaceCamera, ImageAssets,
+};
 use bevy::prelude::*;
 use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use components::*;
@@ -26,6 +30,7 @@ impl Plugin for BoardPlugin {
                     generator::create_map,
                     generator::spawn_points,
                     generate_world,
+                    start_search_for_agents,
                 )
                     .chain(),
             )
@@ -39,8 +44,18 @@ impl Plugin for BoardPlugin {
                     renderer::update_tile_visibility,
                 )
                     .run_if(in_state(states::MainGameState::Game)),
-            );
+            )
+            .add_systems(OnExit(states::MainGameState::Game), remove_map);
     }
+}
+
+fn remove_map(mut commands: Commands, mut next: ResMut<NextState<GameTurnSteps>>) {
+    commands.remove_resource::<CurrentBoard>();
+    next.set(GameTurnSteps::SearchForAgents);
+}
+
+fn start_search_for_agents(mut next: ResMut<NextState<GameTurnSteps>>) {
+    next.set(GameTurnSteps::SearchForAgents);
 }
 
 fn generate_world(

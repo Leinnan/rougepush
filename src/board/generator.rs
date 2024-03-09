@@ -17,7 +17,7 @@ pub fn create_map(mut commands: Commands) {
         dungeon.add_area(Area::new(tun))
     }
     dungeon.generate();
-    let tiles: HashMap<Vector2Int, TileType> = dungeon
+    let mut tiles: HashMap<Vector2Int, TileType> = dungeon
         .to_tiles()
         .iter()
         .map(|p| (*p, TileType::BaseFloor))
@@ -32,11 +32,19 @@ pub fn create_map(mut commands: Commands) {
                 continue;
             }
             let mut rng = rand::thread_rng();
-            let enemies_amount = rng.gen_range(1..=4) + 1;
+            for _ in 0..rng.gen_range(0..4) {
+                let point = room.random_point_without_walls();
+                tiles.entry(point).and_modify(|e| *e = TileType::Pit);
+            }
+
+            let enemies_amount = rng.gen_range(1..=4);
             for _ in 0..enemies_amount {
                 for _ in 0..5 {
-                    let random_point = room.random_point_without_walls();
-                    if !spawn_points.contains_key(&random_point) {
+                    let random_point = room.random_point();
+
+                    if tiles[&random_point] == TileType::BaseFloor
+                        && !spawn_points.contains_key(&random_point)
+                    {
                         spawn_points.insert(random_point, Piece::Enemy);
                         break;
                     }
@@ -61,6 +69,7 @@ pub fn spawn_points(mut commands: Commands, board: Res<CurrentBoard>) {
                 Occupier,
                 ActionDelay(if piece == &Piece::Player { 0 } else { 1 }),
                 PiecePos(*point),
+                GameObject,
             ))
             .id();
         match piece {
