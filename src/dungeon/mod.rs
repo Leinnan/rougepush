@@ -30,6 +30,12 @@ impl Room {
         let y = rng.gen_range(self.a.y..=self.b.y);
         Vector2Int::new(x, y)
     }
+    pub fn random_point_without_walls(&self) -> Vector2Int {
+        let mut rng = thread_rng();
+        let x = rng.gen_range(self.a.x + 1..=self.b.x - 1);
+        let y = rng.gen_range(self.a.y + 1..=self.b.y - 1);
+        Vector2Int::new(x, y)
+    }
     pub fn to_tiles(&self) -> HashSet<Vector2Int> {
         (self.a.y..=self.b.y)
             .flat_map(|y| (self.a.x..=self.b.x).map(move |x| Vector2Int::new(x, y)))

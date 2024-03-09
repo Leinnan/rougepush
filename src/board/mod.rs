@@ -22,7 +22,12 @@ impl Plugin for BoardPlugin {
             .register_type::<Melee>()
             .add_systems(
                 OnEnter(states::MainGameState::Game),
-                (generator::create_map, generate_world).chain(),
+                (
+                    generator::create_map,
+                    generator::spawn_points,
+                    generate_world,
+                )
+                    .chain(),
             )
             .add_systems(
                 Update,

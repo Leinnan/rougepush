@@ -2,7 +2,7 @@ use super::components::*;
 use super::components::{CurrentBoard, TileType};
 use crate::{dungeon::*, states::ActionDelay, vectors::Vector2Int};
 use bevy::{prelude::*, utils::hashbrown::HashMap};
-use rand::prelude::SliceRandom;
+use rand::Rng;
 
 pub fn create_map(mut commands: Commands) {
     info!("Start world generate");
@@ -22,45 +22,62 @@ pub fn create_map(mut commands: Commands) {
         .iter()
         .map(|p| (*p, TileType::BaseFloor))
         .collect();
-    let new_board = CurrentBoard { tiles };
+    let mut spawn_points = HashMap::new();
+    let mut first_room = true;
+    for area in dungeon.areas.iter() {
+        for room in area.rooms.iter() {
+            if first_room {
+                spawn_points.insert(room.random_point_without_walls(), Piece::Player);
+                first_room = false;
+                continue;
+            }
+            let mut rng = rand::thread_rng();
+            let enemies_amount = rng.gen_range(1..=4);
+            for _ in 0..enemies_amount {
+                for _ in 0..3 {
+                    let random_point = room.random_point_without_walls();
+                    if !spawn_points.contains_key(&random_point) {
+                        spawn_points.insert(random_point, Piece::Enemy);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    let new_board = CurrentBoard {
+        tiles,
+        spawn_points,
+    };
 
     new_board.print();
-    let area = || dungeon.areas.choose(&mut rand::thread_rng()).unwrap();
-    let random_point = || {
-        area()
-            .rooms
-            .choose(&mut rand::thread_rng())
-            .unwrap()
-            .random_point()
-    };
-    commands.spawn((
-        Piece::Player,
-        Occupier,
-        PlayerControl,
-        ActionDelay(0),
-        Health { value: 3 },
-        Melee { damage: 2 },
-        PiecePos(random_point()),
-    ));
-
-    commands.spawn((
-        Piece::Enemy,
-        Occupier,
-        AiControl::default(),
-        ActionDelay(1),
-        Health { value: 1 },
-        Melee { damage: 1 },
-        PiecePos(random_point()),
-    ));
-    commands.spawn((
-        Piece::Enemy,
-        Occupier,
-        AiControl::default(),
-        ActionDelay(1),
-        Health { value: 1 },
-        Melee { damage: 1 },
-        PiecePos(random_point()),
-    ));
-
     commands.insert_resource(new_board);
+}
+
+pub fn spawn_points(mut commands: Commands, board: Res<CurrentBoard>) {
+    for (point, piece) in board.spawn_points.iter() {
+        let id = commands
+            .spawn((
+                piece.clone(),
+                Occupier,
+                ActionDelay(if piece == &Piece::Player { 0 } else { 1 }),
+                PiecePos(*point),
+            ))
+            .id();
+        match piece {
+            Piece::Player => {
+                commands.entity(id).insert((
+                    PlayerControl,
+                    Health { value: 3 },
+                    Melee { damage: 1 },
+                ));
+            }
+            Piece::Enemy => {
+                commands.entity(id).insert((
+                    AiControl::default(),
+                    Health { value: 1 },
+                    Melee { damage: 1 },
+                ));
+            }
+        }
+    }
 }

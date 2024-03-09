@@ -128,10 +128,20 @@ fn find_actor(query: Query<(Entity, &Piece)>, mut next_state: ResMut<NextState<G
     }
 }
 
-fn set_current_actor(mut commands: Commands, query: Query<(Entity, &ActionDelay), With<Piece>>) {
+fn set_current_actor(
+    mut commands: Commands,
+    query: Query<(Entity, &ActionDelay, &PiecePos), With<Piece>>,
+    player_q: Query<&PiecePos, With<PlayerControl>>,
+) {
+    let Ok(player) = player_q.get_single() else {
+        return;
+    };
     // info!("set_current_actor");
     let mut lowest_delay = (usize::MAX, Entity::PLACEHOLDER);
-    for (entity, delay) in query.iter() {
+    for (entity, delay, pos) in query.iter() {
+        if pos.manhattan(**player) > 6 {
+            continue;
+        }
         if **delay < lowest_delay.0 {
             lowest_delay.0 = **delay;
             lowest_delay.1 = entity;

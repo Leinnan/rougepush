@@ -31,6 +31,7 @@ pub struct MapTile;
 #[derive(Default, Resource, Reflect)]
 pub struct CurrentBoard {
     pub tiles: HashMap<Vector2Int, TileType>,
+    pub spawn_points: HashMap<Vector2Int, Piece>,
 }
 
 impl CurrentBoard {
@@ -47,10 +48,19 @@ impl CurrentBoard {
             lines.push(vec!['*'; max_x as usize + 1]);
         }
         for (pos, tile_type) in self.tiles.iter() {
-            lines[pos.y as usize][pos.x as usize] = match tile_type {
-                TileType::None => '#',
-                TileType::BaseFloor => 'f',
-                TileType::Pit => 'p',
+            lines[pos.y as usize][pos.x as usize] = match (tile_type, self.spawn_points.get(pos)) {
+                (TileType::None, _) => '#',
+                (TileType::BaseFloor, spawn) => match spawn {
+                    Some(piece) => {
+                        if piece == &Piece::Enemy {
+                            'E'
+                        } else {
+                            'P'
+                        }
+                    }
+                    None => 'f',
+                },
+                (TileType::Pit, _) => 'p',
             };
         }
         for line in lines {

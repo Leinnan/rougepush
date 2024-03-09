@@ -1,5 +1,5 @@
-use crate::states::MainGameState;
 use crate::consts;
+use crate::states::MainGameState;
 use bevy::prelude::*;
 
 use bevy_button_released_plugin::{ButtonReleasedEvent, GameButton};
@@ -39,7 +39,7 @@ fn button_system(
                 MainMenuButton::StartGame => next_state.set(MainGameState::Game),
                 #[cfg(not(target_arch = "wasm32"))]
                 MainMenuButton::Exit => {
-                        exit.send(bevy::app::AppExit);
+                    exit.send(bevy::app::AppExit);
                 }
             }
         }
@@ -53,10 +53,7 @@ fn cleanup_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
     commands.entity(menu_root).despawn_recursive();
 }
 
-fn setup_menu(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             background_color: BackgroundColor::from(Color::hex("3A4D39").unwrap()),
