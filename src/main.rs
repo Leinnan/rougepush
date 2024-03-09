@@ -14,8 +14,6 @@ use bevy_third_person_camera::*;
 mod actions;
 mod board;
 mod consts;
-#[cfg(debug_assertions)]
-mod debug;
 mod dungeon;
 mod gui;
 mod input;
@@ -49,8 +47,6 @@ fn main() {
         .add_plugins((
             Sprite3dPlugin,
             ThirdPersonCameraPlugin,
-            #[cfg(debug_assertions)]
-            debug::DebugPlugin,
             board::BoardPlugin,
             input::InputPlugin,
             lights::LightsPlugin,
