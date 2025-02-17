@@ -16,7 +16,7 @@ impl Action for MeleeHitAction {
         let Some(attacker_position) = world.get::<PiecePos>(self.attacker) else {
             return false;
         };
-        if attacker_position.0.manhattan(self.target) > 1 {
+        if attacker_position.manhattan(self.target) > 1 {
             return false;
         };
         let target_entities = world

@@ -1,6 +1,6 @@
 use crate::{consts, FaceCamera, ImageAssets};
 use bevy::prelude::*;
-use bevy_sprite3d::{Sprite3d, Sprite3dParams};
+use bevy_sprite3d::{Sprite3d, Sprite3dBuilder, Sprite3dParams};
 use rand::prelude::SliceRandom;
 
 use super::{GameObject, Piece, PiecePos, PlayerControl};
@@ -18,11 +18,11 @@ pub fn spawn_piece_renderer(
         };
         let mut entity_cmd = commands.entity(entity);
         entity_cmd.insert((
-            Sprite3d {
+            Transform::from_xyz(pos.0.x as f32, 0.5, pos.0.y as f32),
+            Sprite3dBuilder {
                 image: assets.image_transparent.clone(),
                 pixels_per_metre: 16.,
                 double_sided: true,
-                transform: Transform::from_xyz(pos.0.x as f32, 0.5, pos.0.y as f32),
                 ..default()
             }
             .bundle_with_atlas(&mut sprite_params, atlas),
@@ -67,12 +67,13 @@ pub fn update_tile_visibility(
 
 pub fn dig_the_grave(
     mut removed: RemovedComponents<Piece>,
-    mut query: Query<(&mut TextureAtlas, &mut Transform)>,
+    mut query: Query<(&mut Sprite3d, &mut Transform)>,
 ) {
     for e in removed.read() {
-        let Ok((mut atlas, mut transform)) = query.get_mut(e) else {
+        let Ok((mut sprite, mut transform)) = query.get_mut(e) else {
             return;
         };
+        let atlas = sprite.texture_atlas.as_mut().unwrap();
         atlas.index = *consts::GRAVES.choose(&mut rand::thread_rng()).unwrap();
         transform.translation += Vec3::NEG_Y * 0.2;
     }

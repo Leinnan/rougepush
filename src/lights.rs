@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 
-use crate::board::components::{PiecePos, PlayerControl};
-
+/// Component that implements Valve flickering lights into bevy. For more: [link](https://www.alanzucconi.com/2021/06/15/valve-flickering-lights/)
 #[derive(Component, Reflect)]
+#[require(PointLight(torch_point_light), Visibility(||Visibility::Hidden))]
 pub struct Torch {
+    /// Max value for luminous power in lumens, representing the amount of light emitted by this source in all directions.
     pub max_intensity: f32,
+    /// Min value for luminous power in lumens, representing the amount of light emitted by this source in all directions.
     pub min_intensity: f32,
     pub pattern: Vec<char>,
     pub interval_counter: usize,
     pub cur_index: usize,
+    pub current_intensity: f32,
 }
 
 impl Default for Torch {
@@ -22,7 +25,18 @@ impl Default for Torch {
             ],
             interval_counter: 15,
             cur_index: 0,
+            current_intensity: 30_000.0,
         }
+    }
+}
+
+fn torch_point_light() -> PointLight {
+    PointLight {
+        shadows_enabled: true,
+        color: Color::srgb_u8(190, 150, 0),
+        range: 15.0,
+        intensity: 550.0,
+        ..default()
     }
 }
 
@@ -31,53 +45,31 @@ pub struct LightsPlugin;
 impl Plugin for LightsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Torch>()
-            .add_systems(Update, spawn_torches)
-            .add_systems(FixedUpdate, update_torches);
+            .add_systems(FixedUpdate, update_torches)
+            .add_systems(Update, update_torch_lights);
     }
 }
 
-pub fn spawn_torches(
-    q: Query<(Entity, &Transform, &Torch, &PiecePos), Added<Torch>>,
-    mut commands: Commands,
-    q_p: Query<&PiecePos, With<PlayerControl>>,
-) {
-    let Ok(player_pos) = q_p.get_single() else {
-        return;
-    };
-    for (e, t, torch, torch_pos) in q.iter() {
-        commands.entity(e).insert(PointLightBundle {
-            point_light: PointLight {
-                shadows_enabled: true,
-                color: Color::rgb_u8(190, 150, 0),
-                range: 15.0,
-                intensity: torch.max_intensity,
-                ..default()
-            },
-            visibility: if (*torch_pos).manhattan(**player_pos) < 8 {
-                Visibility::Inherited
-            } else {
-                Visibility::Hidden
-            },
-            transform: *t,
-            ..default()
-        });
-    }
-}
-
-pub fn update_torches(mut q: Query<(&mut PointLight, &mut Torch)>, mut counter: Local<usize>) {
+pub fn update_torches(mut q: Query<&mut Torch>, mut counter: Local<usize>) {
     let min_value = 'a' as i32 as f32;
     let max_value = 'm' as i32 as f32;
     *counter += 1;
-    for (mut light, mut torch) in q.iter_mut() {
+    for mut torch in q.iter_mut() {
         if *counter % torch.interval_counter != 0 {
             continue;
         }
-        torch.cur_index += 1;
-        if torch.cur_index >= torch.pattern.len() {
-            torch.cur_index = 0;
-        }
-        let cur_value = torch.pattern[torch.cur_index] as i32 as f32 - min_value;
-        light.intensity = torch.min_intensity
+        torch.cur_index = torch.cur_index.overflowing_add(1).0;
+        let cur_value =
+            torch.pattern[torch.cur_index % torch.pattern.len()] as i32 as f32 - min_value;
+        torch.current_intensity = torch.min_intensity
             + (cur_value / (max_value - min_value) * (torch.max_intensity - torch.min_intensity));
+    }
+}
+
+fn update_torch_lights(mut q: Query<(&mut PointLight, &Torch)>, time: Res<Time>) {
+    for (mut light, torch) in q.iter_mut() {
+        light.intensity = light
+            .intensity
+            .lerp(torch.current_intensity, 3.0 * time.delta_secs());
     }
 }

@@ -148,7 +148,7 @@ fn set_current_actor(
     // info!("set_current_actor");
     let mut lowest_delay = (usize::MAX, Entity::PLACEHOLDER);
     for (entity, delay, pos) in query.iter() {
-        if pos.manhattan(**player) > 6 {
+        if pos.manhattan(**player) > 5 {
             continue;
         }
         if **delay < lowest_delay.0 {
@@ -277,7 +277,7 @@ fn ai_select_action(
         flying.is_some(),
         ai.max_distance_to_player,
     );
-    info!("{:?}", path_to_player);
+    info!("Path to the player: {:?}", path_to_player);
     for (index, action) in actions.0.iter().enumerate() {
         if action.action_type() == ActionType::MeleeeHit {
             action_index = Some(index);

@@ -4,7 +4,7 @@ use crate::{
     FaceCamera, ImageAssets,
 };
 use bevy::prelude::*;
-use bevy_sprite3d::{Sprite3d, Sprite3dParams};
+use bevy_sprite3d::{Sprite3d, Sprite3dBuilder, Sprite3dParams};
 use components::*;
 use rand::{prelude::SliceRandom, Rng}; // optional if you want movement controls
 
@@ -116,21 +116,17 @@ fn generate_world(
 
                 for i in [-1, -2] {
                     commands
-                        .spawn(
-                            Sprite3d {
+                        .spawn((
+                            Sprite3dBuilder {
                                 image: assets.image.clone(),
                                 pixels_per_metre: 16.,
                                 double_sided: false,
-                                transform: Transform::from_xyz(
-                                    x + el.2,
-                                    i as f32 + 0.499,
-                                    y + el.3,
-                                )
-                                .with_rotation(el.1),
                                 ..default()
                             }
                             .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
-                        )
+                            Transform::from_xyz(x + el.2, i as f32 + 0.499, y + el.3)
+                                .with_rotation(el.1),
+                        ))
                         .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)))
                         .insert(crate::board::MapTile)
                         .insert(PiecePos(*pos));
@@ -145,17 +141,17 @@ fn generate_world(
         };
 
         commands
-            .spawn(
-                Sprite3d {
+            .spawn((
+                Sprite3dBuilder {
                     image: assets.image.clone(),
                     pixels_per_metre: 16.,
                     double_sided: false,
-                    transform: Transform::from_xyz(x, 0.0, y)
-                        .with_rotation(Quat::from_rotation_x(-std::f32::consts::PI / 2.0)),
                     ..default()
                 }
                 .bundle_with_atlas(&mut sprite_params, atlas),
-            )
+                Transform::from_xyz(x, 0.0, y)
+                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::PI / 2.0)),
+            ))
             .insert(Name::new(format!("Tile{}x{}", x, y)))
             .insert(crate::board::MapTile)
             .insert(PiecePos(*pos));
@@ -164,17 +160,17 @@ fn generate_world(
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
             for i in [0, 1] {
                 commands
-                    .spawn(
-                        Sprite3d {
+                    .spawn((
+                        Sprite3dBuilder {
                             image: assets.image.clone(),
                             pixels_per_metre: 16.,
                             double_sided: false,
-                            transform: Transform::from_xyz(x + el.2, i as f32 + 0.499, y + el.3)
-                                .with_rotation(el.1),
                             ..default()
                         }
                         .bundle_with_atlas(&mut sprite_params, wall_atlas.clone()),
-                    )
+                        Transform::from_xyz(x + el.2, i as f32 + 0.499, y + el.3)
+                            .with_rotation(el.1),
+                    ))
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)))
                     .insert(crate::board::MapTile)
                     .insert(PiecePos(*pos));
@@ -192,20 +188,16 @@ fn generate_world(
                 };
                 commands
                     .spawn((
-                        Sprite3d {
+                        Sprite3dBuilder {
                             image: assets.fire.clone(),
                             pixels_per_metre: 196.,
                             double_sided: true,
                             unlit: true,
-                            transform: Transform::from_xyz(
-                                x + (el.2 * 0.8),
-                                1.499,
-                                y + (el.3 * 0.8),
-                            )
-                            .with_rotation(el.1),
                             ..default()
                         }
                         .bundle_with_atlas(&mut sprite_params, atlas.clone()),
+                        Transform::from_xyz(x + (el.2 * 0.8), 1.499, y + (el.3 * 0.8))
+                            .with_rotation(el.1),
                         PiecePos(*pos),
                         Animation {
                             frames: vec![0, 1, 2, 3, 4, 5],
@@ -220,6 +212,7 @@ fn generate_world(
                             pattern: "mmmmmaaaaammmmmaaaaaabcdefgabcdefg".chars().collect(),
                             max_intensity,
                             min_intensity,
+                            current_intensity: min_intensity,
                         },
                     ))
                     .insert(crate::board::MapTile);
@@ -228,10 +221,11 @@ fn generate_world(
     }
 }
 
-fn animate_sprites(time: Res<Time>, mut query: Query<(&mut Animation, &mut TextureAtlas)>) {
-    for (mut animation, mut atlas) in query.iter_mut() {
+fn animate_sprites(time: Res<Time>, mut query: Query<(&mut Animation, &mut Sprite3d)>) {
+    for (mut animation, mut sprite) in query.iter_mut() {
         animation.timer.tick(time.delta());
         if animation.timer.just_finished() {
+            let atlas = sprite.texture_atlas.as_mut().unwrap();
             atlas.index = animation.frames[animation.current];
             animation.current += 1;
             animation.current %= animation.frames.len();

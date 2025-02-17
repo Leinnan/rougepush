@@ -39,7 +39,7 @@ fn button_system(
                 MainMenuButton::StartGame => next_state.set(MainGameState::Game),
                 #[cfg(not(target_arch = "wasm32"))]
                 MainMenuButton::Exit => {
-                    exit.send(bevy::app::AppExit);
+                    exit.send(bevy::app::AppExit::Success);
                 }
             }
         }
@@ -55,9 +55,9 @@ fn cleanup_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
 
 fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
-        .spawn(NodeBundle {
-            background_color: BackgroundColor::from(Color::hex("472D3C").unwrap()),
-            style: Style {
+        .spawn((
+            BackgroundColor::from(Srgba::hex("472D3C").unwrap()),
+            Node {
                 width: Val::Percent(100.),
                 height: Val::Percent(100.),
                 align_items: AlignItems::Center,
@@ -66,36 +66,37 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            ..default()
-        })
+        ))
         .insert(Name::new("menu-root"))
         .insert(MenuRoot)
         .with_children(|parent| {
-            parent.spawn(
-                TextBundle::from_section(
-                    "RougePush",
-                    TextStyle {
-                        font: asset_server.load(consts::BASE_FONT),
-                        font_size: 55.0,
-                        color: Color::hex("CFC6B8").unwrap(),
-                    },
-                )
-                .with_text_justify(JustifyText::Center)
-                .with_style(Style {
+            parent.spawn((
+                TextFont {
+                    font: asset_server.load(consts::BASE_FONT),
+                    font_size: 55.0,
+                    ..default()
+                },
+                TextColor(Srgba::hex("CFC6B8").unwrap().into()),
+                TextLayout::new_with_justify(JustifyText::Center),
+                Node {
                     margin: UiRect {
                         top: Val::Percent(5.0),
                         bottom: Val::Auto,
                         ..default()
                     },
                     ..default()
-                }),
-            );
+                },
+                Text::new("RougePush"),
+            ));
 
-            let btn_text_style = TextStyle {
-                font: asset_server.load(consts::BASE_FONT),
-                font_size: 25.0,
-                color: Color::hex("CFC6B8").unwrap(),
-            };
+            let btn_text_style = (
+                TextFont {
+                    font: asset_server.load(consts::BASE_FONT),
+                    font_size: 25.0,
+                    ..default()
+                },
+                TextColor(Srgba::hex("CFC6B8").unwrap().into()),
+            );
 
             for (text, label, margin) in [
                 (
@@ -119,33 +120,32 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             ] {
                 parent
                     .spawn((
-                        ButtonBundle {
-                            image: asset_server.load("ui/panel-024.png").into(),
-                            style: Style {
-                                width: Val::Px(250.0),
-                                height: Val::Px(80.0),
-                                margin,
-                                align_items: AlignItems::Center,
-                                justify_content: JustifyContent::Center,
-                                ..default()
-                            },
-                            background_color: BackgroundColor::from(Color::hex("7A444A").unwrap()),
+                        Button,
+                        ImageNode {
+                            color: Srgba::hex("7A444A").unwrap().into(),
+                            image: asset_server.load("ui/panel-024.png"),
+                            image_mode: bevy::ui::widget::NodeImageMode::Sliced(TextureSlicer {
+                                // The image borders are 20 pixels in every direction
+                                border: BorderRect::square(22.0),
+                                center_scale_mode: SliceScaleMode::Stretch,
+                                sides_scale_mode: SliceScaleMode::Stretch,
+                                max_corner_scale: 1.0,
+                            }),
                             ..default()
                         },
-                        ImageScaleMode::Sliced(TextureSlicer {
-                            // The image borders are 20 pixels in every direction
-                            border: BorderRect::square(22.0),
-                            center_scale_mode: SliceScaleMode::Stretch,
-                            sides_scale_mode: SliceScaleMode::Stretch,
-                            max_corner_scale: 1.0,
-                        }),
+                        Node {
+                            width: Val::Px(250.0),
+                            height: Val::Px(80.0),
+                            margin,
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            ..default()
+                        },
                         Name::new(format!("button:{}", text)),
                         label,
                         GameButton::default(),
                     ))
-                    .with_children(|parent| {
-                        parent.spawn(TextBundle::from_section(text, btn_text_style.clone()));
-                    });
+                    .with_child((Text::new(text), btn_text_style.clone()));
             }
         });
 }

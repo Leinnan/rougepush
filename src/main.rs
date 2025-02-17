@@ -8,12 +8,13 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_sprite3d::Sprite3dPlugin;
-use bevy_third_person_camera::camera::*;
 use bevy_third_person_camera::*;
 
 mod actions;
 mod board;
 mod consts;
+#[cfg(not(target_arch = "wasm32"))]
+mod debug;
 mod dungeon;
 mod gui;
 mod input;
@@ -27,9 +28,9 @@ struct ImageAssets {
     image: Handle<Image>,
     #[asset(path = "colored-transparent_packed.png")]
     image_transparent: Handle<Image>,
-    #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 49, rows = 22,))]
+    #[asset(texture_atlas(tile_size_x = 16, tile_size_y = 16, columns = 49, rows = 22,))]
     layout: Handle<TextureAtlasLayout>,
-    #[asset(texture_atlas(tile_size_x = 58., tile_size_y = 72., columns = 3, rows = 2,))]
+    #[asset(texture_atlas(tile_size_x = 58, tile_size_y = 72, columns = 3, rows = 2,))]
     fire_layout: Handle<TextureAtlasLayout>,
     #[asset(path = "fire.png")]
     fire: Handle<Image>,
@@ -55,7 +56,6 @@ fn main() {
         ))
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(consts::BG_COLOR))
-        .insert_resource(Msaa::Off)
         .add_systems(FixedUpdate, face_camera)
         .add_loading_state(
             LoadingState::new(states::MainGameState::AssetLoading)
@@ -64,7 +64,8 @@ fn main() {
         );
 
     #[cfg(not(target_arch = "wasm32"))]
-    app.add_systems(Startup, set_window_icon);
+    app.add_systems(Startup, set_window_icon)
+        .add_plugins(debug::plugin);
     app.run();
 }
 
@@ -96,15 +97,13 @@ fn setup(mut commands: Commands) {
         ThirdPersonCamera {
             cursor_lock_key: KeyCode::Space,
             cursor_lock_toggle_enabled: true,
-            gamepad_settings: CameraGamepadSettings::default(),
             cursor_lock_active: false,
-            mouse_sensitivity: 1.0,
             zoom_enabled: true,
             zoom: Zoom::new(4.5, 7.0),
             zoom_sensitivity: 1.0,
             ..default()
         },
-        FogSettings {
+        DistanceFog {
             color: consts::BG_COLOR,
             falloff: FogFalloff::Linear {
                 start: 5.0,
@@ -112,11 +111,10 @@ fn setup(mut commands: Commands) {
             },
             ..default()
         },
-        Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 15.9, -33.2).looking_at(Vec3::ZERO, Vec3::Y),
-            tonemapping: bevy::core_pipeline::tonemapping::Tonemapping::AgX,
-            ..default()
-        },
+        Msaa::Off,
+        Transform::from_xyz(0.0, 15.9, -33.2).looking_at(Vec3::ZERO, Vec3::Y),
+        bevy::core_pipeline::tonemapping::Tonemapping::AgX,
+        Camera3d::default(),
     ));
 }
 

@@ -19,8 +19,19 @@ pub enum Piece {
 #[derive(Component)]
 pub struct GameObject;
 
-#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Deref, DerefMut)]
+#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Deref, DerefMut)]
 pub struct PiecePos(pub Vector2Int);
+
+impl From<PiecePos> for Transform {
+    fn from(val: PiecePos) -> Self {
+        Transform::from_xyz(val.x as f32, 0.1, val.y as f32)
+    }
+}
+impl From<&PiecePos> for Transform {
+    fn from(val: &PiecePos) -> Self {
+        Transform::from_xyz(val.x as f32, 0.1, val.y as f32)
+    }
+}
 
 #[derive(Component, Default, Reflect)]
 pub struct Occupier;

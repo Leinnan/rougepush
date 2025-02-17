@@ -20,12 +20,14 @@ pub struct CurrentActorInfoRoot;
 pub struct CurrentActorInfo;
 
 #[derive(Component, Reflect)]
+#[require(Node(action_info_node))]
 pub struct ActionInfo {
     pub action: InputAction,
     pub description: String,
 }
 
 #[derive(Component, Reflect)]
+#[require(Transform)]
 pub struct Compass(pub Entity);
 
 #[derive(Resource, Reflect, Default)]
@@ -48,12 +50,12 @@ impl Plugin for GameGuiPlugin {
                 OnExit(GameTurnSteps::ActionSelection),
                 despawn_recursive_by_component::<ActionInfo>,
             )
+            .add_observer(on_action_info_added)
             .add_systems(
                 Update,
                 (
                     death_screen::handle_death_menu_buttons,
                     death_screen::create_death_screen,
-                    spawn_action_info,
                     insert_compass,
                     switch_help_ui,
                     update_compass_pos,
@@ -86,32 +88,40 @@ fn switch_help_ui(
 
 fn add_actor_info(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
+        .spawn((
+            Node {
                 width: Val::Px(300.0),
+                height: Val::Vh(100.0),
                 flex_direction: FlexDirection::Column,
                 padding: UiRect::all(Val::Px(10.0)),
                 align_self: AlignSelf::Stretch,
-                align_content: AlignContent::Stretch,
+                row_gap: Val::Px(15.0),
                 ..default()
             },
-            ..default()
-        })
+            Name::new("CurrentActorInfoRoot"),
+        ))
         .insert(GameObject)
         .insert(CurrentActorInfoRoot)
         .with_children(|root| {
-            root.spawn(
-                TextBundle::from_section(
-                    "".to_string(),
-                    TextStyle {
-                        font: asset_server.load(BASE_FONT),
-                        font_size: 20.0,
-                        color: MY_ACCENT_COLOR,
+            root.spawn((
+                TextFont {
+                    font: asset_server.load(BASE_FONT),
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(MY_ACCENT_COLOR),
+                TextLayout::new_with_justify(JustifyText::Left),
+                Node {
+                    margin: UiRect {
+                        top: Val::Percent(5.0),
+                        bottom: Val::Auto,
+                        ..default()
                     },
-                )
-                .with_text_justify(JustifyText::Left),
-            )
-            .insert(CurrentActorInfo);
+                    ..default()
+                },
+                CurrentActorInfo,
+                Text::new(""),
+            ));
         });
 }
 
@@ -127,20 +137,11 @@ fn update_info(
     let Ok((possible_actions, player_control, piece)) = q2.get_single() else {
         return;
     };
-    t.sections[0].value = format!("{:?} turn\n", piece);
+    **t = format!("{:?} turn\n", piece);
     if player_control.is_none() || !help.0 {
         return;
     }
     commands.entity(**parent).with_children(|p| {
-        let action_info_node = NodeBundle {
-            style: Style {
-                flex_direction: FlexDirection::Row,
-                padding: UiRect::all(Val::Px(5.0)),
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            ..default()
-        };
         for a in possible_actions.0.iter() {
             let Some(action) = a.get_input() else {
                 continue;
@@ -148,72 +149,74 @@ fn update_info(
             p.spawn(ActionInfo {
                 action,
                 description: format!("{:?}", a.action_type()),
-            })
-            .insert(action_info_node.clone());
+            });
         }
         p.spawn(ActionInfo {
             action: InputAction::Space,
             description: "Switch camera movement".to_owned(),
-        })
-        .insert(NodeBundle {
-            style: Style {
-                flex_direction: FlexDirection::Row,
-                padding: UiRect::all(Val::Px(5.0)),
-                align_items: AlignItems::Center,
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(10.0),
-                ..default()
-            },
-            ..default()
         });
         p.spawn(ActionInfo {
             action: InputAction::Hide,
             description: "Hide this info".to_owned(),
-        })
-        .insert(NodeBundle {
-            style: Style {
-                flex_direction: FlexDirection::Row,
-                padding: UiRect::all(Val::Px(5.0)),
-                align_items: AlignItems::Center,
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(85.0),
-                ..default()
-            },
-            ..default()
         });
     });
 }
 
-fn spawn_action_info(
+fn action_info_node() -> Node {
+    Node {
+        flex_direction: FlexDirection::Row,
+        margin: UiRect::axes(Val::Px(10.0), Val::Px(5.0)),
+        align_items: AlignItems::Start,
+        justify_items: JustifyItems::Center,
+        ..default()
+    }
+}
+
+fn on_action_info_added(
+    trigger: Trigger<OnAdd, ActionInfo>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    q: Query<(Entity, &ActionInfo), Added<ActionInfo>>,
+    q: Query<&ActionInfo>,
 ) {
-    for (e, info) in q.iter() {
-        commands.entity(e).with_children(|r| {
-            let img = match info.action {
-                InputAction::Left => "ui/keyboard_arrows_left_outline.png".to_owned(),
-                InputAction::Right => "ui/keyboard_arrows_right_outline.png".to_owned(),
-                InputAction::Up => "ui/keyboard_arrows_up_outline.png".to_owned(),
-                InputAction::Down => "ui/keyboard_arrows_down_outline.png".to_owned(),
-                InputAction::Space => "ui/keyboard_space_outline.png".to_owned(),
-                InputAction::Hide => "ui/keyboard_h_outline.png".to_owned(),
-            };
-            r.spawn(ImageBundle {
-                image: UiImage::new(asset_server.load(img)),
-                background_color: MY_ACCENT_COLOR.with_a(0.6).into(),
+    let Ok(info) = q.get(trigger.entity()) else {
+        return;
+    };
+    commands.entity(trigger.entity()).with_children(|r| {
+        let img = match info.action {
+            InputAction::Left => "ui/keyboard_arrows_left_outline.png".to_owned(),
+            InputAction::Right => "ui/keyboard_arrows_right_outline.png".to_owned(),
+            InputAction::Up => "ui/keyboard_arrows_up_outline.png".to_owned(),
+            InputAction::Down => "ui/keyboard_arrows_down_outline.png".to_owned(),
+            InputAction::Space => "ui/keyboard_space_outline.png".to_owned(),
+            InputAction::Hide => "ui/keyboard_h_outline.png".to_owned(),
+        };
+        r.spawn((
+            Node::default(),
+            ImageNode {
+                color: MY_ACCENT_COLOR.with_alpha(0.6),
+                image: asset_server.load(img),
                 ..default()
-            });
-            r.spawn(TextBundle::from_section(
-                info.description.clone(),
-                TextStyle {
-                    font: asset_server.load(BASE_FONT),
-                    font_size: 12.0,
-                    color: Color::rgb_u8(159, 111, 97),
+            },
+        ));
+        r.spawn((
+            TextFont {
+                font: asset_server.load(BASE_FONT),
+                font_size: 12.0,
+                ..default()
+            },
+            TextColor(Color::srgb_u8(159, 111, 97)),
+            TextLayout::new_with_justify(JustifyText::Center),
+            Node {
+                margin: UiRect {
+                    top: Val::Percent(5.0),
+                    bottom: Val::Auto,
+                    ..default()
                 },
-            ));
-        });
-    }
+                ..default()
+            },
+            Text::new(info.description.clone()),
+        ));
+    });
 }
 
 fn insert_compass(
@@ -224,21 +227,27 @@ fn insert_compass(
     q: Query<(Entity, &PiecePos), Added<PlayerControl>>,
 ) {
     for (e, pos) in q.iter() {
-        commands
-            .spawn(PbrBundle {
-                mesh: meshes.add(Plane3d::default().mesh().size(1.0, 1.0)),
-                material: materials.add(StandardMaterial {
-                    base_color_texture: Some(asset_server.load("ui/windrose.png")),
-                    alpha_mode: AlphaMode::Mask(0.5),
-                    // unlit: true,
-                    base_color: Color::WHITE.with_a(0.5),
-                    unlit: true,
-                    ..default()
-                }),
-                transform: Transform::from_xyz(pos.x as f32, 0.1, pos.y as f32),
+        let t: Transform = pos.into();
+        commands.spawn((
+            t,
+            Mesh3d(meshes.add(Plane3d::default().mesh().size(1.0, 1.0))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color_texture: Some(asset_server.load("ui/windrose.png")),
+                alpha_mode: AlphaMode::Mask(0.5),
+                // unlit: true,
+                base_color: Color::WHITE.with_alpha(0.5),
+                unlit: true,
                 ..default()
-            })
-            .insert(Compass(e));
+            })),
+            Compass(e),
+        ));
+        // .spawn(PbrBundle {
+        //     mesh: meshes.add(Plane3d::default().mesh().size(1.0, 1.0)),
+        // material: materials.add(),
+        //     transform: Transform::from_xyz(pos.x as f32, 0.1, pos.y as f32),
+        //     ..default()
+        // })
+        // .insert(Compass(e));
     }
 }
 
@@ -252,7 +261,7 @@ pub fn update_compass_pos(
         let Ok(pos) = q.get(compass.0) else {
             continue;
         };
-        *t = Transform::from_xyz(pos.x as f32, 0.1, pos.y as f32);
+        *t = pos.into();
     }
     if state.is_changed() {
         let visible = !q_p.is_empty() && *state == GameTurnSteps::ActionSelection;

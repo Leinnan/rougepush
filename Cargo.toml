@@ -1,6 +1,6 @@
 [package]
 name = "rougepush"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR CC0-1.0"
 
@@ -20,19 +20,22 @@ opt-level = 2 # fast and small wasm
 
 [dependencies]
 console_error_panic_hook = "0.1"
-bevy_sprite3d = "2.8.0"
-bevy_tweening = "0.10.0"
-bevy_asset_loader = {version="0.20", features=["2d"]}
-bevy_button_released_plugin = "0.5"
-seldom_fn_plugin = "0.6"
+bevy_sprite3d = "4"
+bevy_tweening = "0.12"
+bevy_asset_loader = { version = "0.22", features = ["2d"] }
+bevy_button_released_plugin = { version = "0.8", features = ["global_event"] }
 rand = "0.8"
-bevy_third_person_camera = "0.1.10"
-winit = "0.29"
-image = "0.24"
-leafwing-input-manager = "0.13.3"
+bevy_third_person_camera = "0.2"
+winit = "0.30"
+image = "0.25"
+leafwing-input-manager = "0.16"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bevy-inspector-egui = "0.29"
+iyes_perf_ui = { git = "https://github.com/IyesGames/iyes_perf_ui", branch = "main" }
 
 [dependencies.bevy]
-version = "0.13"
+version = "0.15"
 default-features = true
 features = ["wayland"]
 # features = ["bevy_ui", "bevy_asset", "bevy_text", "wayland","bevy_animation","bevy_ui"]
