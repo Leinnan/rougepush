@@ -67,6 +67,7 @@ fn generate_world(
     let Some(board) = map else {
         return;
     };
+    let root_id = board.root.unwrap();
     let map = &board.tiles;
     // random floor tile
     let options_f = [685, 734, 774, 775, 830, 831];
@@ -129,7 +130,8 @@ fn generate_world(
                         ))
                         .insert(Name::new(format!("PitWall{}x{}[{}]", pos.x, pos.y, i)))
                         .insert(crate::board::MapTile)
-                        .insert(PiecePos(*pos));
+                        .insert(PiecePos(*pos))
+                        .set_parent(root_id);
                 }
             }
             continue;
@@ -154,7 +156,8 @@ fn generate_world(
             ))
             .insert(Name::new(format!("Tile{}x{}", x, y)))
             .insert(crate::board::MapTile)
-            .insert(PiecePos(*pos));
+            .insert(PiecePos(*pos))
+            .set_parent(root_id);
         let mut rng = rand::thread_rng();
 
         for el in surounding_elements.iter().filter(|e| e.0.is_none()) {
@@ -173,7 +176,8 @@ fn generate_world(
                     ))
                     .insert(Name::new(format!("Wall{}x{}[{}]", pos.x, pos.y, i)))
                     .insert(crate::board::MapTile)
-                    .insert(PiecePos(*pos));
+                    .insert(PiecePos(*pos))
+                    .set_parent(root_id);
             }
 
             if (pos.x + pos.y) % 4 == 0 && rng.gen_bool(0.5) {
@@ -215,7 +219,8 @@ fn generate_world(
                             current_intensity: min_intensity,
                         },
                     ))
-                    .insert(crate::board::MapTile);
+                    .insert(crate::board::MapTile)
+                    .set_parent(root_id);
             }
         }
     }

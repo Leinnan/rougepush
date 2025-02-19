@@ -1,5 +1,6 @@
 pub mod menu;
 use bevy::{
+    ecs::system::SystemParam,
     prelude::*,
     utils::{HashMap, HashSet},
 };
@@ -55,10 +56,41 @@ pub struct CurrentActorToken;
 pub struct PendingActions(pub VecDeque<Box<dyn Action>>);
 
 #[derive(Deref, DerefMut, Component, Default, Reflect)]
-pub struct ActionDelay(pub usize);
+pub struct ActorTurn(pub u64);
 
 #[derive(Event, Default, Reflect)]
 pub struct PlayerIsDeadEvent;
+
+#[derive(SystemParam)]
+pub struct IngameActors<'w, 's> {
+    pub q: Query<'w, 's, (Entity, &'static ActorTurn, &'static PiecePos), With<Piece>>,
+    player_q: Query<'w, 's, &'static PiecePos, With<PlayerControl>>,
+    pub turn: Local<'s, u64>,
+}
+
+impl IngameActors<'_, '_> {
+    pub fn get_next_actor(&mut self) -> Option<Entity> {
+        let Ok(player) = self.player_q.get_single() else {
+            return None;
+        };
+        let (mut lowest_delay, mut l_entity) = (u64::MAX, Entity::PLACEHOLDER);
+        for (entity, delay, pos) in self.q.iter() {
+            if pos.manhattan(**player) > 5 {
+                continue;
+            }
+            if **delay < lowest_delay {
+                lowest_delay = **delay;
+                l_entity = entity;
+            }
+        }
+        if lowest_delay < u64::MAX {
+            *self.turn += 1;
+            Some(l_entity)
+        } else {
+            None
+        }
+    }
+}
 
 pub struct GameStatesPlugin;
 
@@ -69,7 +101,7 @@ impl Plugin for GameStatesPlugin {
             .init_state::<GameTurnSteps>()
             .register_type::<CurrentActorToken>()
             .add_event::<PlayerIsDeadEvent>()
-            .register_type::<ActionDelay>()
+            .register_type::<ActorTurn>()
             .register_all_actions()
             .init_resource::<PendingActions>()
             .add_systems(
@@ -137,28 +169,13 @@ fn find_actor(query: Query<(Entity, &Piece)>, mut next_state: ResMut<NextState<G
     }
 }
 
-fn set_current_actor(
-    mut commands: Commands,
-    query: Query<(Entity, &ActionDelay, &PiecePos), With<Piece>>,
-    player_q: Query<&PiecePos, With<PlayerControl>>,
-) {
-    let Ok(player) = player_q.get_single() else {
+fn set_current_actor(mut commands: Commands, mut actors: IngameActors) {
+    let Some(next_actor) = actors.get_next_actor() else {
         return;
     };
-    // info!("set_current_actor");
-    let mut lowest_delay = (usize::MAX, Entity::PLACEHOLDER);
-    for (entity, delay, pos) in query.iter() {
-        if pos.manhattan(**player) > 5 {
-            continue;
-        }
-        if **delay < lowest_delay.0 {
-            lowest_delay.0 = **delay;
-            lowest_delay.1 = entity;
-        }
-    }
-    if lowest_delay.0 < usize::MAX {
-        commands.entity(lowest_delay.1).insert(CurrentActorToken);
-    }
+    commands
+        .entity(next_actor)
+        .insert((CurrentActorToken, ActorTurn(*actors.turn)));
 }
 
 fn prepare_action_list(world: &mut World) {
@@ -324,14 +341,10 @@ fn execute_pending_action(world: &mut World) {
     };
 }
 
-fn remove_token(
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut ActionDelay), With<CurrentActorToken>>,
-) {
-    let Ok((entity, mut delay)) = query.get_single_mut() else {
+fn remove_token(mut commands: Commands, query: Query<Entity, With<CurrentActorToken>>) {
+    let Ok(entity) = query.get_single() else {
         return;
     };
-    delay.0 = **delay + 2;
     commands.entity(entity).remove::<CurrentActorToken>();
 }
 

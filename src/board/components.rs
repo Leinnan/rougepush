@@ -43,6 +43,7 @@ pub struct MapTile;
 pub struct CurrentBoard {
     pub tiles: HashMap<Vector2Int, TileType>,
     pub spawn_points: HashMap<Vector2Int, Piece>,
+    pub root: Option<Entity>,
 }
 
 impl CurrentBoard {
