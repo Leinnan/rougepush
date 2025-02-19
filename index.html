@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>RougePush</title>
+    <style>
+      html,
+      body {
+        text-align: center;
+        margin: auto 0;
+        background-color: #292F36;
+      }
+  
+      canvas {
+        filter: drop-shadow(#e66601 0 0 10px);
+      }
+    </style>
+  </head>
+
+<body style="margin: 0px;">
+  <script type="module">
+    import './restart-audio-context.js'
+    import init from './rougepush.js'
+
+    init().catch((error) => {
+      if (!error.message.startsWith("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
+        throw error;
+      }
+    });
+  </script>
+</body>
+
+</html>
