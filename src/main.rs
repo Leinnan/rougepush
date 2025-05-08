@@ -5,6 +5,7 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use bevy::ecs::system::IntoObserverSystem;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_sprite3d::Sprite3dPlugin;
@@ -16,6 +17,7 @@ mod consts;
 #[cfg(not(target_arch = "wasm32"))]
 mod debug;
 mod dungeon;
+mod gfx;
 mod gui;
 mod input;
 mod lights;
@@ -40,12 +42,32 @@ struct ImageAssets {
 #[derive(Component)]
 struct FaceCamera;
 
+pub trait ObserverExtension {
+    fn observe_in_child<E: Event, B: Bundle, M>(
+        &mut self,
+        system: impl IntoObserverSystem<E, B, M>,
+    ) -> &mut Self;
+}
+
+impl ObserverExtension for EntityCommands<'_> {
+    fn observe_in_child<E: Event, B: Bundle, M>(
+        &mut self,
+        system: impl IntoObserverSystem<E, B, M>,
+    ) -> &mut Self {
+        self.with_children(|p| {
+            let entity = p.target_entity();
+            p.spawn(Observer::new(system).with_entity(entity));
+        })
+    }
+}
+
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins((
+            gfx::GfxPlugin,
             Sprite3dPlugin,
             ThirdPersonCameraPlugin,
             board::BoardPlugin,
@@ -70,10 +92,9 @@ fn main() {
 }
 
 fn face_camera(
-    cam_query: Query<&Transform, With<Camera>>,
+    cam_transform: Single<&Transform, With<Camera>>,
     mut query: Query<&mut Transform, (With<FaceCamera>, Without<Camera>)>,
 ) {
-    let cam_transform = cam_query.single();
     for mut transform in query.iter_mut() {
         let mut delta = cam_transform.translation - transform.translation;
         delta.y = 0.0;
@@ -87,7 +108,7 @@ pub fn despawn_recursive_by_component<T: bevy::prelude::Component>(
     mut commands: Commands,
 ) {
     for e in q.iter() {
-        commands.entity(e).despawn_recursive();
+        commands.entity(e).despawn();
     }
 }
 

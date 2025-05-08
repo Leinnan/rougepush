@@ -36,8 +36,6 @@ fn add_input_bindings(query: Query<Entity, Added<PlayerControl>>, mut commands: 
         (InputAction::Hide, KeyCode::KeyH),
     ]);
     for entity in query.iter() {
-        commands
-            .entity(entity)
-            .insert(InputManagerBundle::with_map(input_map.clone()));
+        commands.entity(entity).insert(input_map.clone());
     }
 }

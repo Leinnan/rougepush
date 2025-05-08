@@ -20,7 +20,7 @@ impl WalkAction {
         other_pieces: Query<&PiecePos, With<Occupier>>,
         board: Res<CurrentBoard>,
     ) {
-        let Ok((actions, mut to_remove)) = q.get_single_mut() else {
+        let Ok((actions, mut to_remove)) = q.single_mut() else {
             return;
         };
         let actions = actions.deref().deref();

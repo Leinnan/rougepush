@@ -1,6 +1,3 @@
-use bevy::prelude::*;
-use leafwing_input_manager::action_state::ActionState;
-
 use crate::{
     board::components::*,
     consts::{BASE_FONT, MY_ACCENT_COLOR},
@@ -8,10 +5,12 @@ use crate::{
     input::InputAction,
     states::*,
 };
+use bevy::prelude::*;
+use leafwing_input_manager::action_state::ActionState;
 
-use self::death_screen::DeathScreenButton;
-
+pub mod button_anim;
 mod death_screen;
+pub mod extra;
 
 #[derive(Component, Reflect)]
 pub struct CurrentActorInfoRoot;
@@ -20,7 +19,7 @@ pub struct CurrentActorInfoRoot;
 pub struct CurrentActorInfo;
 
 #[derive(Component, Reflect)]
-#[require(Node(action_info_node))]
+#[require(Node = action_info_node())]
 pub struct ActionInfo {
     pub action: InputAction,
     pub description: String,
@@ -28,6 +27,7 @@ pub struct ActionInfo {
 
 #[derive(Component, Reflect)]
 #[require(Transform)]
+#[require(StateScoped::<MainGameState>(MainGameState::Game))]
 pub struct Compass(pub Entity);
 
 #[derive(Resource, Reflect, Default)]
@@ -37,8 +37,8 @@ pub struct GameGuiPlugin;
 
 impl Plugin for GameGuiPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins((extra::plugin, button_anim::ButtonsPlugin));
         app.register_type::<CurrentActorInfo>()
-            .register_type::<DeathScreenButton>()
             .register_type::<ActionInfo>()
             .insert_resource(HelpDisplayEnabled(true))
             .add_systems(OnEnter(MainGameState::Game), add_actor_info)
@@ -54,12 +54,12 @@ impl Plugin for GameGuiPlugin {
             .add_systems(
                 Update,
                 (
-                    death_screen::handle_death_menu_buttons,
                     death_screen::create_death_screen,
                     insert_compass,
                     switch_help_ui,
                     update_compass_pos,
-                ),
+                )
+                    .run_if(in_state(MainGameState::Game)),
             );
     }
 }
@@ -69,7 +69,7 @@ fn switch_help_ui(
     mut help: ResMut<HelpDisplayEnabled>,
     mut q: Query<&mut Visibility, With<ActionInfo>>,
 ) {
-    let Ok(action_state) = input.get_single() else {
+    let Ok(action_state) = input.single() else {
         return;
     };
 
@@ -127,21 +127,21 @@ fn add_actor_info(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn update_info(
     mut commands: Commands,
-    mut q: Query<(&mut Text, &Parent), With<CurrentActorInfo>>,
+    mut q: Query<(&mut Text, &ChildOf), With<CurrentActorInfo>>,
     q2: Query<(&PossibleActions, Option<&PlayerControl>, &Piece), With<CurrentActorToken>>,
     help: Res<HelpDisplayEnabled>,
 ) {
-    let Ok((mut t, parent)) = q.get_single_mut() else {
+    let Ok((mut t, parent)) = q.single_mut() else {
         return;
     };
-    let Ok((possible_actions, player_control, piece)) = q2.get_single() else {
+    let Ok((possible_actions, player_control, piece)) = q2.single() else {
         return;
     };
     **t = format!("{:?} turn\n", piece);
     if player_control.is_none() || !help.0 {
         return;
     }
-    commands.entity(**parent).with_children(|p| {
+    commands.entity(parent.0).with_children(|p| {
         for a in possible_actions.0.iter() {
             let Some(action) = a.get_input() else {
                 continue;
@@ -178,10 +178,10 @@ fn on_action_info_added(
     asset_server: Res<AssetServer>,
     q: Query<&ActionInfo>,
 ) {
-    let Ok(info) = q.get(trigger.entity()) else {
+    let Ok(info) = q.get(trigger.target()) else {
         return;
     };
-    commands.entity(trigger.entity()).with_children(|r| {
+    commands.entity(trigger.target()).with_children(|r| {
         let img = match info.action {
             InputAction::Left => "ui/keyboard_arrows_left_outline.png".to_owned(),
             InputAction::Right => "ui/keyboard_arrows_right_outline.png".to_owned(),

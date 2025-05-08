@@ -1,6 +1,6 @@
-use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 
-use crate::vectors::Vector2Int;
+use crate::{states::MainGameState, vectors::Vector2Int};
 
 #[derive(Component, Reflect, Default, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum TileType {
@@ -11,15 +11,19 @@ pub enum TileType {
 }
 
 #[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
+#[component(immutable)]
 pub enum Piece {
     Player,
     Enemy,
 }
 
 #[derive(Component)]
+#[require(StateScoped::<MainGameState>(MainGameState::Game))]
 pub struct GameObject;
 
-#[derive(Component, Reflect, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Deref, DerefMut)]
+#[derive(
+    Component, Reflect, PartialEq, Default, Eq, PartialOrd, Ord, Clone, Copy, Deref, DerefMut,
+)]
 pub struct PiecePos(pub Vector2Int);
 
 impl From<PiecePos> for Transform {
@@ -34,16 +38,18 @@ impl From<&PiecePos> for Transform {
 }
 
 #[derive(Component, Default, Reflect)]
+#[require(PiecePos)]
 pub struct Occupier;
 
 #[derive(Component)]
+#[require(StateScoped::<MainGameState>(MainGameState::Game))]
+#[require(PiecePos)]
 pub struct MapTile;
 
 #[derive(Default, Resource, Reflect)]
 pub struct CurrentBoard {
     pub tiles: HashMap<Vector2Int, TileType>,
     pub spawn_points: HashMap<Vector2Int, Piece>,
-    pub root: Option<Entity>,
 }
 
 impl CurrentBoard {
@@ -96,6 +102,11 @@ pub struct Melee {
 pub struct PlayerControl;
 
 #[derive(Component, Reflect)]
+#[require(Piece = Piece::Player)]
+#[component(immutable)]
+pub struct PlayerPiece;
+
+#[derive(Component, Reflect)]
 pub struct AiControl {
     pub max_distance_to_player: usize,
 }
@@ -113,8 +124,23 @@ impl Default for AiControl {
 
 #[derive(Component, Reflect)]
 pub struct Animation {
-    /// indices of all the frames in the animation
-    pub frames: Vec<usize>,
-    pub current: usize,
-    pub timer: Timer,
+    pub frames_amount: usize,
+    pub index: usize,
+}
+
+impl Animation {
+    pub fn new_with_index(amount: usize, index: usize) -> Self {
+        Self {
+            frames_amount: amount,
+            index,
+        }
+    }
+
+    pub fn current(&self) -> usize {
+        self.index % self.frames_amount
+    }
+
+    pub fn bump_index(&mut self) {
+        self.index = self.index.overflowing_add(1).0;
+    }
 }

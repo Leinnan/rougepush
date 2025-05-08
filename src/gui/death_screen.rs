@@ -1,14 +1,10 @@
+use crate::{
+    consts::{self, MY_ACCENT_COLOR},
+    ObserverExtension,
+};
 use bevy::prelude::*;
-use bevy_button_released_plugin::{ButtonReleasedEvent, GameButton};
 
-use crate::consts::{self, MY_ACCENT_COLOR};
-
-use super::{GameObject, MainGameState, PlayerIsDeadEvent};
-
-#[derive(Component, Reflect)]
-pub enum DeathScreenButton {
-    GoToMenu,
-}
+use super::{extra::button::ButtonReleased, GameObject, MainGameState, PlayerIsDeadEvent};
 
 pub fn create_death_screen(
     ev: EventReader<PlayerIsDeadEvent>,
@@ -67,9 +63,8 @@ pub fn create_death_screen(
                 Button,
                 BackgroundColor::from(Srgba::hex("4F6F52").unwrap()),
                 Name::new("button".to_string()),
-                DeathScreenButton::GoToMenu,
-                GameButton::default(),
             ))
+            .observe_in_child(go_to_menu)
             .with_child((
                 Text::new("Go to menu"),
                 btn_txt_clr,
@@ -78,14 +73,6 @@ pub fn create_death_screen(
         });
 }
 
-pub fn handle_death_menu_buttons(
-    mut reader: EventReader<ButtonReleasedEvent>,
-    interaction_query: Query<&DeathScreenButton>,
-    mut next_state: ResMut<NextState<MainGameState>>,
-) {
-    for event in reader.read() {
-        if interaction_query.get(**event).is_ok() {
-            next_state.set(MainGameState::Menu);
-        }
-    }
+fn go_to_menu(_: Trigger<ButtonReleased>, mut next_state: ResMut<NextState<MainGameState>>) {
+    next_state.set(MainGameState::Menu);
 }

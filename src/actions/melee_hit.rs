@@ -63,7 +63,7 @@ impl MeleeHitAction {
         mut q: Query<(&PossibleActions, &mut ActionsToRemove)>,
         other_pieces: Query<(&PiecePos, &Piece), With<Health>>,
     ) {
-        let Ok((actions, mut to_remove)) = q.get_single_mut() else {
+        let Ok((actions, mut to_remove)) = q.single_mut() else {
             return;
         };
         let actions = actions.deref().deref();

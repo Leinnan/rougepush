@@ -20,22 +20,21 @@ opt-level = 2 # fast and small wasm
 
 [dependencies]
 console_error_panic_hook = "0.1"
-bevy_sprite3d = "4"
-bevy_tweening = "0.12"
-bevy_asset_loader = { version = "0.22", features = ["2d"] }
-bevy_button_released_plugin = { version = "0.8", features = ["global_event"] }
+bevy_sprite3d = {git = "https://github.com/Leinnan/bevy_sprite3d", branch = "0_16_improvements"}
+bevy_tweening = "0.13"
+bevy_asset_loader = { version = "0.23.0-rc.3", features = ["2d"] }
 rand = "0.8"
-bevy_third_person_camera = "0.2"
+bevy_third_person_camera = {git = "https://github.com/Leinnan/bevy_third_person_camera.git", branch = "0_16_cleanup"}
 winit = "0.30"
 image = "0.25"
-leafwing-input-manager = "0.16"
+leafwing-input-manager = "0.17"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy-inspector-egui = "0.29"
-iyes_perf_ui = { git = "https://github.com/IyesGames/iyes_perf_ui", branch = "main" }
+bevy-inspector-egui = "0.31"
+# iyes_perf_ui = "0.4"
 
 [dependencies.bevy]
-version = "0.15"
+version = "0.16"
 default-features = true
 features = ["wayland"]
 # features = ["bevy_ui", "bevy_asset", "bevy_text", "wayland","bevy_animation","bevy_ui"]

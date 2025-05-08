@@ -1,7 +1,8 @@
 use super::components::*;
 use super::components::{CurrentBoard, TileType};
 use crate::{dungeon::*, states::ActorTurn, vectors::Vector2Int};
-use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy::platform::collections::HashMap;
+use bevy::prelude::*;
 use rand::Rng;
 
 pub fn create_map(mut commands: Commands) {
@@ -52,13 +53,9 @@ pub fn create_map(mut commands: Commands) {
             }
         }
     }
-    let root = commands
-        .spawn((Name::new("CurrentBoard"), Transform::default(), InheritedVisibility::VISIBLE))
-        .id();
     let new_board = CurrentBoard {
         tiles,
         spawn_points,
-        root: root.into(),
     };
 
     new_board.print();
@@ -66,7 +63,6 @@ pub fn create_map(mut commands: Commands) {
 }
 
 pub fn spawn_points(mut commands: Commands, board: Res<CurrentBoard>) {
-    let parent = board.root.unwrap();
     for (point, piece) in board.spawn_points.iter() {
         let id = commands
             .spawn((
@@ -76,7 +72,6 @@ pub fn spawn_points(mut commands: Commands, board: Res<CurrentBoard>) {
                 PiecePos(*point),
                 GameObject,
             ))
-            .set_parent(parent)
             .id();
         match piece {
             Piece::Player => {

@@ -1,10 +1,6 @@
 pub mod menu;
-use bevy::{
-    ecs::system::SystemParam,
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
-use bevy_button_released_plugin::*;
+use bevy::platform::collections::{HashMap, HashSet};
+use bevy::{ecs::system::SystemParam, prelude::*};
 use leafwing_input_manager::action_state::ActionState;
 use std::collections::{BinaryHeap, VecDeque};
 use std::ops::DerefMut;
@@ -27,7 +23,8 @@ pub enum MainGameState {
     Game,
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Default, Clone, States)]
+#[derive(Debug, Hash, PartialEq, Eq, Default, Clone, SubStates)]
+#[source(MainGameState = MainGameState::Game)]
 pub enum GameTurnSteps {
     #[default]
     SearchForAgents,
@@ -70,7 +67,7 @@ pub struct IngameActors<'w, 's> {
 
 impl IngameActors<'_, '_> {
     pub fn get_next_actor(&mut self) -> Option<Entity> {
-        let Ok(player) = self.player_q.get_single() else {
+        let Ok(player) = self.player_q.single() else {
             return None;
         };
         let (mut lowest_delay, mut l_entity) = (u64::MAX, Entity::PLACEHOLDER);
@@ -96,9 +93,10 @@ pub struct GameStatesPlugin;
 
 impl Plugin for GameStatesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((MenuPlugin, ButtonsReleasedPlugin))
+        app.add_plugins(MenuPlugin)
             .init_state::<MainGameState>()
-            .init_state::<GameTurnSteps>()
+            .add_sub_state::<GameTurnSteps>()
+            .enable_state_scoped_entities::<MainGameState>()
             .register_type::<CurrentActorToken>()
             .add_event::<PlayerIsDeadEvent>()
             .register_type::<ActorTurn>()
@@ -149,7 +147,6 @@ impl Plugin for GameStatesPlugin {
                 OnExit(MainGameState::Game),
                 (
                     despawn_recursive_by_component::<GameObject>,
-                    despawn_recursive_by_component::<MapTile>,
                     despawn_recursive_by_component::<Piece>,
                     remove_map,
                 )
@@ -182,7 +179,7 @@ fn prepare_action_list(world: &mut World) {
     // info!("prepare_action_list");
     let mut query = world
         .query_filtered::<(Entity, &Piece, &PiecePos, Option<&Melee>), With<CurrentActorToken>>();
-    let Ok((entity, piece, pos, melee)) = query.get_single(world) else {
+    let Ok((entity, piece, pos, melee)) = query.single(world) else {
         return;
     };
 
@@ -222,7 +219,7 @@ fn remove_moves(
     mut commands: Commands,
     mut q: Query<(&mut PossibleActions, &ActionsToRemove, Entity), With<CurrentActorToken>>,
 ) {
-    let Ok((mut actions, to_remove, entity)) = q.get_single_mut() else {
+    let Ok((mut actions, to_remove, entity)) = q.single_mut() else {
         return;
     };
     let mut remove_list = to_remove.0.clone();
@@ -245,7 +242,7 @@ fn select_action(
     mut next_state: ResMut<NextState<GameTurnSteps>>,
     mut action_queue: ResMut<PendingActions>,
 ) {
-    let Ok((mut actions, action_state)) = q.get_single_mut() else {
+    let Ok((mut actions, action_state)) = q.single_mut() else {
         return;
     };
     let mut action_index = None;
@@ -274,10 +271,10 @@ fn ai_select_action(
     occupier_query: Query<&PiecePos, With<Occupier>>,
     board: Option<Res<CurrentBoard>>,
 ) {
-    let Ok((position, mut actions, ai, flying)) = q.get_single_mut() else {
+    let Ok((position, mut actions, ai, flying)) = q.single_mut() else {
         return;
     };
-    let Ok((player_position, _)) = player_query.get_single() else {
+    let Ok((player_position, _)) = player_query.single() else {
         return;
     };
     let Some(board) = board else {
@@ -342,7 +339,7 @@ fn execute_pending_action(world: &mut World) {
 }
 
 fn remove_token(mut commands: Commands, query: Query<Entity, With<CurrentActorToken>>) {
-    let Ok(entity) = query.get_single() else {
+    let Ok(entity) = query.single() else {
         return;
     };
     commands.entity(entity).remove::<CurrentActorToken>();
@@ -414,7 +411,7 @@ fn check_if_player_is_alive(
     for e in removed.read() {
         if player_query.get(e).is_ok() {
             info!("PLAYER DEAD");
-            ev.send(PlayerIsDeadEvent);
+            ev.write(PlayerIsDeadEvent);
         }
     }
 }

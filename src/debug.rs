@@ -1,55 +1,58 @@
-use bevy::input::common_conditions::input_just_released;
 use bevy::input::common_conditions::input_toggle_active;
 use bevy::prelude::*;
-use bevy_inspector_egui::bevy_egui::{egui, EguiContexts};
+use bevy_inspector_egui::bevy_egui::EguiContexts;
+use bevy_inspector_egui::bevy_egui::{egui, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use iyes_perf_ui::prelude::{
-    PerfUiEntryEntityCount, PerfUiEntryFrameTime, PerfUiEntryFrameTimeWorst, PerfUiRoot,
-};
+// use iyes_perf_ui::prelude::{
+//     PerfUiEntryEntityCount, PerfUiEntryFrameTime, PerfUiEntryFrameTimeWorst, PerfUiRoot,
+// };
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(EguiPlugin {
+        enable_multipass_for_primary_context: false,
+    });
     app.add_plugins(WorldInspectorPlugin::new().run_if(input_toggle_active(false, KeyCode::F1)));
 
     app.add_systems(Startup, configure_egui);
-    app.add_systems(Startup, perf_info);
-    app.add_systems(
-        Update,
-        toggle_perf_info.run_if(input_just_released(KeyCode::F2)),
-    );
+    // app.add_systems(Startup, perf_info);
+    // app.add_systems(
+    //     Update,
+    //     toggle_perf_info.run_if(input_just_released(KeyCode::F2)),
+    // );
 
-    app.add_plugins((
-        iyes_perf_ui::PerfUiPlugin,
-        bevy::diagnostic::FrameTimeDiagnosticsPlugin,
-        bevy::diagnostic::EntityCountDiagnosticsPlugin,
-        bevy::diagnostic::SystemInformationDiagnosticsPlugin,
-    ));
+    // app.add_plugins((
+    //     iyes_perf_ui::PerfUiPlugin,
+    //     bevy::diagnostic::FrameTimeDiagnosticsPlugin,
+    //     bevy::diagnostic::EntityCountDiagnosticsPlugin,
+    //     bevy::diagnostic::SystemInformationDiagnosticsPlugin,
+    // ));
 }
 
-fn toggle_perf_info(mut query: Query<&mut Visibility, With<PerfUiRoot>>) {
-    let Ok(mut vis) = query.get_single_mut() else {
-        return;
-    };
-    *vis = if vis.eq(&Visibility::Hidden) {
-        Visibility::Inherited
-    } else {
-        Visibility::Hidden
-    };
-}
+// fn toggle_perf_info(mut query: Query<&mut Visibility, With<PerfUiRoot>>) {
+//     let Ok(mut vis) = query.single_mut() else {
+//         return;
+//     };
+//     *vis = if vis.eq(&Visibility::Hidden) {
+//         Visibility::Inherited
+//     } else {
+//         Visibility::Hidden
+//     };
+// }
 
-fn perf_info(mut commands: Commands) {
-    commands
-        .spawn(PerfUiRoot {
-            position: iyes_perf_ui::prelude::PerfUiPosition::BottomRight,
-            ..default()
-        })
-        .insert((
-            PerfUiEntryFrameTime::default(),
-            PerfUiEntryFrameTimeWorst::default(),
-            PerfUiEntryEntityCount::default(),
-            iyes_perf_ui::prelude::PerfUiEntryCpuUsage::default(),
-            iyes_perf_ui::prelude::PerfUiEntryMemUsage::default(),
-        ))
-        .insert(Name::new("PerfUiRoot"));
-}
+// fn perf_info(mut commands: Commands) {
+//     commands
+//         .spawn(PerfUiRoot {
+//             position: iyes_perf_ui::prelude::PerfUiPosition::BottomRight,
+//             ..default()
+//         })
+//         .insert((
+//             PerfUiEntryFrameTime::default(),
+//             PerfUiEntryFrameTimeWorst::default(),
+//             PerfUiEntryEntityCount::default(),
+//             iyes_perf_ui::prelude::PerfUiEntryCpuUsage::default(),
+//             iyes_perf_ui::prelude::PerfUiEntryMemUsage::default(),
+//         ))
+//         .insert(Name::new("PerfUiRoot"));
+// }
 
 fn configure_egui(mut contexts: EguiContexts) {
     #[cfg(windows)]
